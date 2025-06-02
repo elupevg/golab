@@ -19,6 +19,7 @@ nodes:
     image: "quay.io/frrouting/frr:master"
 links:
   - endpoints: ["frr01:eth1", "frr02:eth1"]
+    ipv4_subnet: 100.100.0.0/29
   - endpoints: ["frr01:eth2", "frr03:eth1"]
   - endpoints: ["frr02:eth2", "frr03:eth2"]
 `
@@ -35,7 +36,10 @@ func TestTopologyFromYAML(t *testing.T) {
 			"frr03": {Image: "quay.io/frrouting/frr:master"},
 		},
 		Links: []topology.Link{
-			{Endpoints: []string{"frr01:eth1", "frr02:eth1"}},
+			{
+				Endpoints:  []string{"frr01:eth1", "frr02:eth1"},
+				IPv4Subnet: "100.100.0.0/29",
+			},
 			{Endpoints: []string{"frr01:eth2", "frr03:eth1"}},
 			{Endpoints: []string{"frr02:eth2", "frr03:eth2"}},
 		},
@@ -114,12 +118,25 @@ func TestTopologyValidate(t *testing.T) {
 			},
 			err: topology.ErrUnknownNode,
 		},
+		{
+			name: "UnknownNode",
+			topo: topology.Topology{
+				Nodes: map[string]topology.Node{"frr01": {}, "frr02": {}},
+				Links: []topology.Link{
+					{
+						Endpoints:  []string{"frr01:eth1", "frr02:eth1"},
+						IPv4Subnet: "256.256.256.0/24",
+					},
+				},
+			},
+			err: topology.ErrInvalidIPv4Subnet,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.topo.Validate()
 			if !errors.Is(tc.err, err) {
-				t.Errorf("errors: want %v, got %v", tc.err, err)
+				t.Errorf("errors: want %q, got %q", tc.err, err)
 			}
 		})
 	}

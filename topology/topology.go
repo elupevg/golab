@@ -3,16 +3,18 @@ package topology
 
 import (
 	"errors"
+	"net"
 	"strings"
 
 	"github.com/goccy/go-yaml"
 )
 
 var (
-	ErrUnknownNode     = errors.New("unknown node in link endpoints")
-	ErrZeroNodes       = errors.New("topology must have at least one node")
-	ErrTooFewEndpoints = errors.New("link must have at least two endpoints")
-	ErrInvalidEndpoint = errors.New("invalid endpoint formatting")
+	ErrUnknownNode       = errors.New("unknown node in link endpoints")
+	ErrZeroNodes         = errors.New("topology must have at least one node")
+	ErrTooFewEndpoints   = errors.New("link must have at least two endpoints")
+	ErrInvalidEndpoint   = errors.New("invalid endpoint formatting")
+	ErrInvalidIPv4Subnet = errors.New("cannot parse IPv4 subnet")
 )
 
 // Node represents a node in a virtual network topology.
@@ -22,7 +24,8 @@ type Node struct {
 
 // Link represents a link in virtual network topology.
 type Link struct {
-	Endpoints []string `yaml:"endpoints"`
+	Endpoints  []string `yaml:"endpoints"`
+	IPv4Subnet string   `yaml:"ipv4_subnet"`
 }
 
 // Topology represents a virtual network consisting of nodes and links.
@@ -48,6 +51,13 @@ func (topo Topology) Validate() error {
 			}
 			if _, ok := topo.Nodes[ep_parts[0]]; !ok {
 				return ErrUnknownNode
+			}
+		}
+		if link.IPv4Subnet != "" {
+			// Validate manually assigned IPv4 subnet
+			_, _, err := net.ParseCIDR(link.IPv4Subnet)
+			if err != nil {
+				return ErrInvalidIPv4Subnet
 			}
 		}
 	}

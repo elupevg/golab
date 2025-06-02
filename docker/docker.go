@@ -2,36 +2,48 @@ package docker
 
 import (
 	"context"
-	"strconv"
+	"fmt"
+	"net"
 
+	"github.com/apparentlymart/go-cidr/cidr"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/topology"
 )
 
-type StubVP struct {
-	linkCount int
-	nodeCount int
-	linkErr   error
-	nodeErr   error
+type DockerProvider struct {
+	dockerClient client.APIClient
+	count        int
 }
 
-func (s *StubVP) LinkCreate(_ context.Context, _ topology.Link) (string, error) {
-	if s.linkErr != nil {
-		return "", s.linkErr
+func New(dockerClient client.APIClient) *DockerProvider {
+	return &DockerProvider{dockerClient: dockerClient}
+}
+
+func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) (string, error) {
+	_, ipv4Net, err := net.ParseCIDR(link.IPv4Subnet)
+	_, lastIP := cidr.AddressRange(ipv4Net)
+	lastIP = cidr.Dec(lastIP)
+	opts := network.CreateOptions{
+		IPAM: &network.IPAM{
+			Config: []network.IPAMConfig{
+				{
+					Subnet:  link.IPv4Subnet,
+					Gateway: lastIP.String(),
+				},
+			},
+		},
 	}
-	s.linkCount++
-	return strconv.Itoa(s.linkCount), nil
-}
-
-func (s *StubVP) NodeCreate(_ context.Context, _ topology.Node) (string, error) {
-	if s.nodeErr != nil {
-		return "", s.nodeErr
+	resp, err := dp.dockerClient.NetworkCreate(ctx, fmt.Sprintf("link%d", dp.count+1), opts)
+	if err != nil {
+		return "", err
 	}
-	s.nodeCount++
-	return strconv.Itoa(s.nodeCount), nil
+	dp.count++
+	return resp.ID, nil
 }
 
-func New() *StubVP {
-	return &StubVP{}
+func (dp *DockerProvider) NodeCreate(_ context.Context, _ topology.Node) (string, error) {
+	return "", nil
 }
 
 /*

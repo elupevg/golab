@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/docker"
 	"github.com/elupevg/golab/topology"
 )
@@ -68,8 +69,15 @@ func Main() int {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	dockerClient := docker.New()
-	if err := cmd(context.Background(), data, dockerClient); err != nil {
+	dockerClient, err := client.NewClientWithOpts(client.WithVersion("1.47"))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer dockerClient.Close()
+
+	vp := docker.New(dockerClient)
+	if err := cmd(context.Background(), data, vp); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
