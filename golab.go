@@ -10,6 +10,7 @@ import (
 // VirtProvider represents a virtualization provider and its methods (e.g. Docker).
 type VirtProvider interface {
 	LinkCreate(ctx context.Context, link topology.Link) error
+	LinkRemove(ctx context.Context, link topology.Link) error
 	NodeCreate(ctx context.Context, node topology.Node) error
 }
 
@@ -39,5 +40,15 @@ func Build(ctx context.Context, data []byte, vp VirtProvider) error {
 
 // Wreck deletes a virtual network topology described in the provided YAML intent file.
 func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
+	topo, err := topology.FromYAML(data)
+	if err != nil {
+		return err
+	}
+	for _, link := range topo.Links {
+		err := vp.LinkRemove(ctx, link)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

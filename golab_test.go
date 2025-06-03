@@ -37,6 +37,14 @@ func (s *stubVirtProvider) LinkCreate(_ context.Context, _ topology.Link) error 
 	return nil
 }
 
+func (s *stubVirtProvider) LinkRemove(_ context.Context, _ topology.Link) error {
+	if s.linkErr != nil {
+		return s.linkErr
+	}
+	s.linkCount--
+	return nil
+}
+
 func (s *stubVirtProvider) NodeCreate(_ context.Context, _ topology.Node) error {
 	if s.nodeErr != nil {
 		return s.nodeErr

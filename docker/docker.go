@@ -47,6 +47,16 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	return nil
 }
 
+// LinkRemove translates a topology.Link entity into a Docker bridge network and removes it.
+func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) error {
+	err := dp.dockerClient.NetworkRemove(ctx, link.Name)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Removed Docker network: name=%s\n", link.Name)
+	return nil
+}
+
 // NodeCreate translates a topology.Node entity into a Docker container and creates/starts it.
 func (dp *DockerProvider) NodeCreate(_ context.Context, _ topology.Node) error {
 	return nil
