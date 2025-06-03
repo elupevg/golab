@@ -2,10 +2,7 @@ package docker
 
 import (
 	"context"
-	"fmt"
-	"net"
 
-	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/topology"
@@ -13,7 +10,6 @@ import (
 
 type DockerProvider struct {
 	dockerClient client.APIClient
-	count        int
 }
 
 func New(dockerClient client.APIClient) *DockerProvider {
@@ -21,24 +17,20 @@ func New(dockerClient client.APIClient) *DockerProvider {
 }
 
 func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) (string, error) {
-	_, ipv4Net, err := net.ParseCIDR(link.IPv4Subnet)
-	_, lastIP := cidr.AddressRange(ipv4Net)
-	lastIP = cidr.Dec(lastIP)
 	opts := network.CreateOptions{
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{
 				{
 					Subnet:  link.IPv4Subnet,
-					Gateway: lastIP.String(),
+					Gateway: link.IPv4Gateway,
 				},
 			},
 		},
 	}
-	resp, err := dp.dockerClient.NetworkCreate(ctx, fmt.Sprintf("link%d", dp.count+1), opts)
+	resp, err := dp.dockerClient.NetworkCreate(ctx, link.Name, opts)
 	if err != nil {
 		return "", err
 	}
-	dp.count++
 	return resp.ID, nil
 }
 

@@ -19,7 +19,9 @@ nodes:
     image: "quay.io/frrouting/frr:master"
 links:
   - endpoints: ["frr01:eth1", "frr02:eth1"]
+    name: "golab-link-1"
     ipv4_subnet: 100.100.0.0/29
+    ipv4_gateway: 100.100.0.6
   - endpoints: ["frr01:eth2", "frr03:eth1"]
   - endpoints: ["frr02:eth2", "frr03:eth2"]
 `
@@ -35,8 +37,10 @@ func TestTopologyFromYAML(t *testing.T) {
 		},
 		Links: []topology.Link{
 			{
-				Endpoints:  []string{"frr01:eth1", "frr02:eth1"},
-				IPv4Subnet: "100.100.0.0/29",
+				Endpoints:   []string{"frr01:eth1", "frr02:eth1"},
+				Name:        "golab-link-1",
+				IPv4Subnet:  "100.100.0.0/29",
+				IPv4Gateway: "100.100.0.6",
 			},
 			{Endpoints: []string{"frr01:eth2", "frr03:eth1"}},
 			{Endpoints: []string{"frr02:eth2", "frr03:eth2"}},

@@ -24,8 +24,10 @@ type Node struct {
 
 // Link represents a link in a virtual network topology.
 type Link struct {
-	Endpoints  []string `yaml:"endpoints"`
-	IPv4Subnet string   `yaml:"ipv4_subnet"`
+	Endpoints   []string `yaml:"endpoints"`
+	Name        string   `yaml:"name"`
+	IPv4Subnet  string   `yaml:"ipv4_subnet"`
+	IPv4Gateway string   `yaml:"ipv4_gateway"`
 }
 
 // Topology represents a virtual network comprised of nodes and links.
