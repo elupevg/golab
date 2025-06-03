@@ -3,7 +3,6 @@ package golab_test
 import (
 	"context"
 	"errors"
-	"strconv"
 	"testing"
 
 	"github.com/elupevg/golab"
@@ -30,20 +29,20 @@ type stubVirtProvider struct {
 	nodeErr   error
 }
 
-func (s *stubVirtProvider) LinkCreate(_ context.Context, _ topology.Link) (string, error) {
+func (s *stubVirtProvider) LinkCreate(_ context.Context, _ topology.Link) error {
 	if s.linkErr != nil {
-		return "", s.linkErr
+		return s.linkErr
 	}
 	s.linkCount++
-	return strconv.Itoa(s.linkCount), nil
+	return nil
 }
 
-func (s *stubVirtProvider) NodeCreate(_ context.Context, _ topology.Node) (string, error) {
+func (s *stubVirtProvider) NodeCreate(_ context.Context, _ topology.Node) error {
 	if s.nodeErr != nil {
-		return "", s.nodeErr
+		return s.nodeErr
 	}
 	s.nodeCount++
-	return strconv.Itoa(s.nodeCount), nil
+	return nil
 }
 
 func TestBuild(t *testing.T) {
