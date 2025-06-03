@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-const goodYAML = `
+const testYAML = `
 name: "triangle"
 nodes:
   frr01:
@@ -23,8 +23,6 @@ links:
   - endpoints: ["frr01:eth2", "frr03:eth1"]
   - endpoints: ["frr02:eth2", "frr03:eth2"]
 `
-
-const badYAML = `name`
 
 func TestTopologyFromYAML(t *testing.T) {
 	t.Parallel()
@@ -44,7 +42,7 @@ func TestTopologyFromYAML(t *testing.T) {
 			{Endpoints: []string{"frr02:eth2", "frr03:eth2"}},
 		},
 	}
-	got, err := topology.FromYAML([]byte(goodYAML))
+	got, err := topology.FromYAML([]byte(testYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,14 +53,33 @@ func TestTopologyFromYAML(t *testing.T) {
 
 func TestTopologyFromYAMLError(t *testing.T) {
 	t.Parallel()
-	_, err := topology.FromYAML([]byte(badYAML))
-	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
+	testCases := []struct {
+		name   string
+		data   []byte
+		errMsg string
+	}{
+		{
+			name:   "CorruptYAML",
+			data:   []byte(`name`),
+			errMsg: "[1:1] string was used where mapping is expected\n>  1 | name\n       ^\n",
+		},
+		{
+			name:   "ZeroNodesYAML",
+			data:   []byte(`name: "triangle"`),
+			errMsg: "topology has no nodes defined",
+		},
 	}
-	wantErrMsg := "[1:1] string was used where mapping is expected\n>  1 | name\n       ^\n"
-	if wantErrMsg != errMsg {
-		t.Fatalf("error: want %q, got %q", wantErrMsg, errMsg)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := topology.FromYAML(tc.data)
+			var errMsg string
+			if err != nil {
+				errMsg = err.Error()
+			}
+			if tc.errMsg != errMsg {
+				t.Fatalf("error: want %q, got %q", tc.errMsg, errMsg)
+			}
+		})
 	}
 }
 
@@ -119,7 +136,7 @@ func TestTopologyValidate(t *testing.T) {
 			err: topology.ErrUnknownNode,
 		},
 		{
-			name: "UnknownNode",
+			name: "InvalidIPv4Subnet",
 			topo: topology.Topology{
 				Nodes: map[string]topology.Node{"frr01": {}, "frr02": {}},
 				Links: []topology.Link{

@@ -10,7 +10,7 @@ import (
 	"github.com/elupevg/golab/topology"
 )
 
-const goodYAML = `
+const testYAML = `
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
@@ -22,8 +22,6 @@ links:
   - endpoints: ["frr01:eth1", "frr02:eth1"]
   - endpoints: ["frr01:eth2", "frr03:eth1"]
 `
-
-const badYAML = `name`
 
 type stubVirtProvider struct {
 	linkCount int
@@ -52,7 +50,7 @@ func TestBuild(t *testing.T) {
 	t.Parallel()
 	wantLinks, wantNodes := 2, 3
 	vp := new(stubVirtProvider)
-	err := golab.Build(context.Background(), []byte(goodYAML), vp)
+	err := golab.Build(context.Background(), []byte(testYAML), vp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +66,7 @@ func TestBuildLinkError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create link")
 	vp := &stubVirtProvider{linkErr: wantErr}
-	err := golab.Build(context.Background(), []byte(goodYAML), vp)
+	err := golab.Build(context.Background(), []byte(testYAML), vp)
 	if !errors.Is(wantErr, err) {
 		t.Fatalf("error: want %q, got %q", wantErr, err)
 	}
@@ -78,15 +76,15 @@ func TestBuildNodeError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create node")
 	vp := &stubVirtProvider{nodeErr: wantErr}
-	err := golab.Build(context.Background(), []byte(goodYAML), vp)
+	err := golab.Build(context.Background(), []byte(testYAML), vp)
 	if !errors.Is(wantErr, err) {
 		t.Fatalf("error: want %q, got %q", wantErr, err)
 	}
 }
 
-func TestBuildYAMLError(t *testing.T) {
+func TestBuildCorruptYAMLError(t *testing.T) {
 	t.Parallel()
-	err := golab.Build(context.Background(), []byte(badYAML), new(stubVirtProvider))
+	err := golab.Build(context.Background(), []byte(`name`), new(stubVirtProvider))
 	var errMsg string
 	if err != nil {
 		errMsg = err.Error()
@@ -99,7 +97,7 @@ func TestBuildYAMLError(t *testing.T) {
 
 func TestWreck(t *testing.T) {
 	t.Parallel()
-	err := golab.Wreck(context.Background(), []byte(goodYAML), new(stubVirtProvider))
+	err := golab.Wreck(context.Background(), []byte(testYAML), new(stubVirtProvider))
 	if err != nil {
 		t.Fatal(err)
 	}

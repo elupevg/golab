@@ -11,9 +11,9 @@ import (
 
 var (
 	ErrUnknownNode       = errors.New("unknown node in link endpoints")
-	ErrZeroNodes         = errors.New("topology must have at least one node")
-	ErrTooFewEndpoints   = errors.New("link must have at least two endpoints")
-	ErrInvalidEndpoint   = errors.New("invalid endpoint formatting")
+	ErrZeroNodes         = errors.New("topology has no nodes defined")
+	ErrTooFewEndpoints   = errors.New("link has less than two endpoints")
+	ErrInvalidEndpoint   = errors.New("invalid endpoint format")
 	ErrInvalidIPv4Subnet = errors.New("cannot parse IPv4 subnet")
 )
 
@@ -22,20 +22,21 @@ type Node struct {
 	Image string
 }
 
-// Link represents a link in virtual network topology.
+// Link represents a link in a virtual network topology.
 type Link struct {
 	Endpoints  []string `yaml:"endpoints"`
 	IPv4Subnet string   `yaml:"ipv4_subnet"`
 }
 
-// Topology represents a virtual network consisting of nodes and links.
+// Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
 	Name  string          `yaml:"name"`
 	Nodes map[string]Node `yaml:"nodes"`
 	Links []Link          `yaml:"links"`
 }
 
-// Validate runs sanity checks to ensure that topology can be built.
+// validate runs sanity checks to ensure that the network topology can be built.
+// It is a value method since validation should not modify the original struct.
 func (topo Topology) Validate() error {
 	if len(topo.Nodes) == 0 {
 		return ErrZeroNodes
@@ -65,6 +66,8 @@ func (topo Topology) Validate() error {
 }
 
 // FromYAML validates and converts YAML data into a Topology struct.
+// Returning a struct value instead of a pointer is intentional as
+// topology is not supposed to be modified by the caller.
 func FromYAML(data []byte) (Topology, error) {
 	var topo Topology
 	err := yaml.Unmarshal(data, &topo)
