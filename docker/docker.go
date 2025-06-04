@@ -26,6 +26,16 @@ func New(dockerClient client.APIClient) *DockerProvider {
 
 // LinkCreate translates a topology.Link entity into a Docker bridge network and creates it.
 func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) error {
+	// Check whether network with such name already exists.
+	exists, err := dp.LinkExists(ctx, link)
+	if err != nil {
+		return err
+	}
+	if exists {
+		fmt.Printf("Docker network already exists: name=%s\n", link.Name)
+		return nil
+	}
+	// Otherwise, create a new Docker network.
 	opts := network.CreateOptions{
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{
@@ -47,9 +57,33 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	return nil
 }
 
+// LinkExists checks whether a Docker network representing the provided topology.Link already exists.
+func (dp *DockerProvider) LinkExists(ctx context.Context, link topology.Link) (bool, error) {
+	netSums, err := dp.dockerClient.NetworkList(ctx, network.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+	for _, netSum := range netSums {
+		if netSum.Name == link.Name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // LinkRemove translates a topology.Link entity into a Docker bridge network and removes it.
 func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) error {
-	err := dp.dockerClient.NetworkRemove(ctx, link.Name)
+	// Check whether network with such name exists.
+	exists, err := dp.LinkExists(ctx, link)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		fmt.Printf("Docker network already removed: name=%s\n", link.Name)
+		return nil
+	}
+	// Otherwise, remove a Docker network.
+	err = dp.dockerClient.NetworkRemove(ctx, link.Name)
 	if err != nil {
 		return err
 	}
