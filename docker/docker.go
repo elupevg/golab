@@ -51,9 +51,6 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return err
 	}
 	fmt.Printf("Created Docker network: name=%s, subnet=%s, id=%s\n", link.Name, link.IPv4Subnet, string(resp.ID[:12]))
-	if resp.Warning != "" {
-		fmt.Println("Warnings: ", resp.Warning)
-	}
 	return nil
 }
 

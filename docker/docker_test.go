@@ -2,103 +2,112 @@ package docker_test
 
 import (
 	"context"
-	"fmt"
-	"strconv"
+	"errors"
 	"testing"
 
-	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/docker"
+	"github.com/elupevg/golab/docker/fakeclient"
 	"github.com/elupevg/golab/topology"
 )
-
-type stubDockerClient struct {
-	client.APIClient
-	netErr   error
-	networks map[string]string
-}
-
-func (s *stubDockerClient) NetworkCreate(_ context.Context, name string, _ network.CreateOptions) (network.CreateResponse, error) {
-	if s.netErr != nil {
-		return network.CreateResponse{}, s.netErr
-	}
-	if _, ok := s.networks[name]; ok {
-		return network.CreateResponse{}, fmt.Errorf("network %s already exists", name)
-	}
-	dummyID := strconv.Itoa(len(s.networks)+1) + "000000000000"
-	s.networks[name] = dummyID
-	return network.CreateResponse{ID: dummyID}, nil
-}
-
-func (s *stubDockerClient) NetworkRemove(_ context.Context, networkID string) error {
-	if s.netErr != nil {
-		return s.netErr
-	}
-	if _, ok := s.networks[networkID]; !ok {
-		return fmt.Errorf("network %s does not exists", networkID)
-	}
-	delete(s.networks, networkID)
-	return nil
-}
-
-func (s *stubDockerClient) NetworkList(_ context.Context, opts network.ListOptions) ([]network.Summary, error) {
-	if s.netErr != nil {
-		return nil, s.netErr
-	}
-	netSumms := make([]network.Summary, 0, len(s.networks))
-	for name, id := range s.networks {
-		netSumms = append(netSumms, network.Summary{Name: name, ID: id})
-	}
-	return netSumms, nil
-}
 
 func TestLinkCreateRemove(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	dc := &stubDockerClient{
-		networks: make(map[string]string),
-	}
-	dp := docker.New(dc)
+	fakeDockerClient := fakeclient.New()
+	dp := docker.New(fakeDockerClient)
 	link1 := topology.Link{Name: "golab-link-1", IPv4Subnet: "100.11.0.0/29", IPv4Gateway: "100.11.0.6"}
 	link2 := topology.Link{Name: "golab-link-2", IPv4Subnet: "100.22.0.0/29", IPv4Gateway: "100.22.0.6"}
-	// network creation
+	// Network creation
 	err := dp.LinkCreate(ctx, link1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(dc.networks) != 1 {
-		t.Fatalf("docker network count: want 1, got %d", len(dc.networks))
+	if len(fakeDockerClient.Networks) != 1 {
+		t.Fatalf("network count: want 1, got %d", len(fakeDockerClient.Networks))
 	}
-	// network creation idempotence
+	// Network creation idempotence
 	err = dp.LinkCreate(ctx, link1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(dc.networks) != 1 {
-		t.Fatalf("docker network count: want 1, got %d", len(dc.networks))
+	if len(fakeDockerClient.Networks) != 1 {
+		t.Fatalf("network count: want 1, got %d", len(fakeDockerClient.Networks))
 	}
-	// second network creation
+	// Second network creation
 	err = dp.LinkCreate(ctx, link2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(dc.networks) != 2 {
-		t.Fatalf("docker network count: want 2, got %d", len(dc.networks))
+	if len(fakeDockerClient.Networks) != 2 {
+		t.Fatalf("network count: want 2, got %d", len(fakeDockerClient.Networks))
 	}
-	// network removal
+	// Network removal
 	err = dp.LinkRemove(ctx, link1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(dc.networks) != 1 {
-		t.Errorf("docker network count: want 1, got %d", len(dc.networks))
+	if len(fakeDockerClient.Networks) != 1 {
+		t.Fatalf("network count: want 1, got %d", len(fakeDockerClient.Networks))
 	}
-	// network removal idempotence
+	// Network removal idempotence
 	err = dp.LinkRemove(ctx, link1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(dc.networks) != 1 {
-		t.Errorf("docker network count: want 1, got %d", len(dc.networks))
+	if len(fakeDockerClient.Networks) != 1 {
+		t.Fatalf("network count: want 1, got %d", len(fakeDockerClient.Networks))
+	}
+}
+
+func TestLinkExistsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fakeDockerClient := fakeclient.New()
+	dp := docker.New(fakeDockerClient)
+	wantErr := errors.New("error listing networks")
+	fakeDockerClient.NetworkListErr = wantErr
+	// Standalone method invocation
+	_, err := dp.LinkExists(ctx, topology.Link{Name: "golab-link-1"})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("error: want %q, got %q", wantErr, err)
+	}
+	// Method invocation from LinkCreate
+	err = dp.LinkCreate(ctx, topology.Link{Name: "golab-link-1"})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("error: want %q, got %q", wantErr, err)
+	}
+	// Method invocation from LinkRemove
+	err = dp.LinkRemove(ctx, topology.Link{Name: "golab-link-1"})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("error: want %q, got %q", wantErr, err)
+	}
+}
+
+func TestLinkCreateError(t *testing.T) {
+	t.Parallel()
+	fakeDockerClient := fakeclient.New()
+	dp := docker.New(fakeDockerClient)
+	wantErr := errors.New("failed to create a network")
+	fakeDockerClient.NetworkCreateErr = wantErr
+	err := dp.LinkCreate(context.Background(), topology.Link{Name: "golab-link-1"})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("error: want %q, got %q", wantErr, err)
+	}
+}
+
+func TestLinkRemoveError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fakeDockerClient := fakeclient.New()
+	dp := docker.New(fakeDockerClient)
+	err := dp.LinkCreate(ctx, topology.Link{Name: "golab-link-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantErr := errors.New("failed to remove a network")
+	fakeDockerClient.NetworkRemoveErr = wantErr
+	err = dp.LinkRemove(ctx, topology.Link{Name: "golab-link-1"})
+	if !errors.Is(err, wantErr) {
+		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
 }
