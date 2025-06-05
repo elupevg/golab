@@ -12,6 +12,7 @@ type VirtProvider interface {
 	LinkCreate(ctx context.Context, link topology.Link) error
 	LinkRemove(ctx context.Context, link topology.Link) error
 	NodeCreate(ctx context.Context, node topology.Node) error
+	NodeRemove(ctx context.Context, node topology.Node) error
 }
 
 // Command represents a network topology orchestration command.
@@ -46,6 +47,12 @@ func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
 	}
 	for _, link := range topo.Links {
 		err := vp.LinkRemove(ctx, link)
+		if err != nil {
+			return err
+		}
+	}
+	for _, node := range topo.Nodes {
+		err := vp.NodeRemove(ctx, node)
 		if err != nil {
 			return err
 		}
