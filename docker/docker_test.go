@@ -111,3 +111,29 @@ func TestLinkRemoveError(t *testing.T) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
 }
+
+func TestContainerExistsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	fakeDockerClient := fakeclient.New()
+	dp := docker.New(fakeDockerClient)
+	wantErr := errors.New("error listing containers")
+	fakeDockerClient.ContainerListErr = wantErr
+	// Standalone method invocation
+	_, err := dp.NodeExists(ctx, topology.Node{Name: "frr01"})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("error: want %q, got %q", wantErr, err)
+	}
+	/*
+		// Method invocation from LinkCreate
+		err = dp.LinkCreate(ctx, topology.Link{Name: "golab-link-1"})
+		if !errors.Is(err, wantErr) {
+			t.Errorf("error: want %q, got %q", wantErr, err)
+		}
+		// Method invocation from LinkRemove
+		err = dp.LinkRemove(ctx, topology.Link{Name: "golab-link-1"})
+		if !errors.Is(err, wantErr) {
+			t.Errorf("error: want %q, got %q", wantErr, err)
+		}
+	*/
+}

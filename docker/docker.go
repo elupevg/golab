@@ -8,7 +8,9 @@ package docker
 import (
 	"context"
 	"fmt"
+	"slices"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/topology"
@@ -86,6 +88,20 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 	}
 	fmt.Printf("Removed Docker network: name=%s\n", link.Name)
 	return nil
+}
+
+// NodeExists checks whether a Docker container representing the provided topology.Node already exists.
+func (dp *DockerProvider) NodeExists(ctx context.Context, node topology.Node) (bool, error) {
+	contSums, err := dp.dockerClient.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return false, err
+	}
+	for _, contSum := range contSums {
+		if slices.Contains(contSum.Names, node.Name) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // NodeCreate translates a topology.Node entity into a Docker container and creates/starts it.
