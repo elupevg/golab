@@ -6,6 +6,7 @@ require (
 	github.com/docker/docker v28.2.2+incompatible
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0
+	github.com/opencontainers/image-spec v1.1.1
 )
 
 require (
@@ -25,7 +26,6 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect

@@ -9,11 +9,14 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/elupevg/golab/topology"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // DockerProvider stores cached Docker client.
@@ -104,7 +107,74 @@ func (dp *DockerProvider) NodeExists(ctx context.Context, node topology.Node) (b
 	return false, nil
 }
 
+// generateMounts converts list of binds from YAML topology file into a slice of Docker mounts.
+func generateMounts(node topology.Node) []mount.Mount {
+	mounts := make([]mount.Mount, 0, len(node.Binds))
+	for _, bind := range node.Binds {
+		parts := strings.Split(bind, ":")
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: parts[0],
+			Target: parts[1],
+		})
+	}
+	return mounts
+}
+
+// generateNetworkConfig converts node configuration into Docker container network configuration.
+func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
+	endpoints := make(map[string]*network.EndpointSettings, len(node.Links))
+	for _, link := range node.Links {
+		endpoints[link] = &network.EndpointSettings{}
+	}
+	return &network.NetworkingConfig{EndpointsConfig: endpoints}
+}
+
 // NodeCreate translates a topology.Node entity into a Docker container and creates/starts it.
-func (dp *DockerProvider) NodeCreate(_ context.Context, _ topology.Node) error {
+func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) error {
+	// Check whether container with such name already exists (even if stopped)
+	exists, err := dp.NodeExists(ctx, node)
+	if err != nil {
+		return err
+	}
+	if exists {
+		err = dp.dockerClient.ContainerRestart(ctx, node.Name, container.StopOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Docker container already exists, restarted: name=%s\n", node.Name)
+		return nil
+	}
+	// Generate new container configuration
+	contConfig := &container.Config{
+		Hostname: node.Name,
+		Image:    node.Image,
+	}
+	initialize := true
+	mounts := generateMounts(node)
+	fmt.Println(mounts)
+	hostConfig := &container.HostConfig{
+		AutoRemove: true,
+		Privileged: true,
+		Init:       &initialize,
+		Mounts:     generateMounts(node),
+	}
+	netConfig := generateNetworkConfig(node)
+	platform := new(ocispec.Platform)
+	// Create new container
+	resp, err := dp.dockerClient.ContainerCreate(ctx, contConfig, hostConfig, netConfig, platform, node.Name)
+	if err != nil {
+		return err
+	}
+	// Start new container
+	err = dp.dockerClient.ContainerStart(ctx, node.Name, container.StartOptions{})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Created and started Docker container: name=%s, ID=%s\n", node.Name, resp.ID)
+	return nil
+}
+
+func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) error {
 	return nil
 }

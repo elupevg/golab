@@ -13,6 +13,8 @@ name: "triangle"
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
+    binds:
+      - "frr01:/etc/frr"
   frr02:
     image: "quay.io/frrouting/frr:master"
   frr03:
@@ -23,7 +25,9 @@ links:
     ipv4_subnet: 100.100.0.0/29
     ipv4_gateway: 100.100.0.6
   - endpoints: ["frr01:eth2", "frr03:eth1"]
+    name: "golab-link-2"
   - endpoints: ["frr02:eth2", "frr03:eth2"]
+    name: "golab-link-3"
 `
 
 func TestTopologyFromYAML(t *testing.T) {
@@ -31,9 +35,22 @@ func TestTopologyFromYAML(t *testing.T) {
 	want := topology.Topology{
 		Name: "triangle",
 		Nodes: map[string]topology.Node{
-			"frr01": {Image: "quay.io/frrouting/frr:master"},
-			"frr02": {Image: "quay.io/frrouting/frr:master"},
-			"frr03": {Image: "quay.io/frrouting/frr:master"},
+			"frr01": {
+				Name:  "frr01",
+				Image: "quay.io/frrouting/frr:master",
+				Binds: []string{"frr01:/etc/frr"},
+				Links: []string{"golab-link-1", "golab-link-2"},
+			},
+			"frr02": {
+				Name:  "frr02",
+				Image: "quay.io/frrouting/frr:master",
+				Links: []string{"golab-link-1", "golab-link-3"},
+			},
+			"frr03": {
+				Name:  "frr03",
+				Image: "quay.io/frrouting/frr:master",
+				Links: []string{"golab-link-2", "golab-link-3"},
+			},
 		},
 		Links: []topology.Link{
 			{
@@ -42,8 +59,14 @@ func TestTopologyFromYAML(t *testing.T) {
 				IPv4Subnet:  "100.100.0.0/29",
 				IPv4Gateway: "100.100.0.6",
 			},
-			{Endpoints: []string{"frr01:eth2", "frr03:eth1"}},
-			{Endpoints: []string{"frr02:eth2", "frr03:eth2"}},
+			{
+				Endpoints: []string{"frr01:eth2", "frr03:eth1"},
+				Name:      "golab-link-2",
+			},
+			{
+				Endpoints: []string{"frr02:eth2", "frr03:eth2"},
+				Name:      "golab-link-3",
+			},
 		},
 	}
 	got, err := topology.FromYAML([]byte(testYAML))

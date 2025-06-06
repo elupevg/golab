@@ -19,7 +19,10 @@ var (
 
 // Node represents a node in a virtual network topology.
 type Node struct {
-	Image string
+	Name  string
+	Image string `yaml:"image"`
+	Links []string
+	Binds []string `yaml:"binds"`
 }
 
 // Link represents a link in a virtual network topology.
@@ -67,6 +70,27 @@ func (topo Topology) Validate() error {
 	return nil
 }
 
+// Enrich populates missing fields in the original Topology struct.
+func (topo Topology) Enrich() (Topology, error) {
+	newNodes := make(map[string]Node, len(topo.Nodes))
+	for name, node := range topo.Nodes {
+		newNode := Node{Name: name, Image: node.Image, Binds: node.Binds}
+		links := make([]string, 0)
+		for _, link := range topo.Links {
+			for _, ep := range link.Endpoints {
+				if !strings.Contains(ep, name) {
+					continue
+				}
+				links = append(links, link.Name)
+			}
+		}
+		newNode.Links = links
+		newNodes[name] = newNode
+	}
+	topo.Nodes = newNodes
+	return topo, nil
+}
+
 // FromYAML validates and converts YAML data into a Topology struct.
 // Returning a struct value instead of a pointer is intentional as
 // topology is not supposed to be modified by the caller.
@@ -79,5 +103,9 @@ func FromYAML(data []byte) (Topology, error) {
 	if err := topo.Validate(); err != nil {
 		return Topology{}, err
 	}
-	return topo, nil
+	newTopo, err := topo.Enrich()
+	if err != nil {
+		return Topology{}, err
+	}
+	return newTopo, nil
 }
