@@ -45,14 +45,14 @@ func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
 	if err != nil {
 		return err
 	}
-	for _, link := range topo.Links {
-		err := vp.LinkRemove(ctx, link)
+	for _, node := range topo.Nodes {
+		err := vp.NodeRemove(ctx, node)
 		if err != nil {
 			return err
 		}
 	}
-	for _, node := range topo.Nodes {
-		err := vp.NodeRemove(ctx, node)
+	for _, link := range topo.Links {
+		err := vp.LinkRemove(ctx, link)
 		if err != nil {
 			return err
 		}
