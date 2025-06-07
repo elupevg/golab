@@ -25,13 +25,13 @@ func Build(ctx context.Context, data []byte, vp VirtProvider) error {
 		return err
 	}
 	for _, link := range topo.Links {
-		err := vp.LinkCreate(ctx, link)
+		err := vp.LinkCreate(ctx, *link)
 		if err != nil {
 			return err
 		}
 	}
 	for _, node := range topo.Nodes {
-		err := vp.NodeCreate(ctx, node)
+		err := vp.NodeCreate(ctx, *node)
 		if err != nil {
 			return err
 		}
@@ -46,13 +46,13 @@ func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
 		return err
 	}
 	for _, node := range topo.Nodes {
-		err := vp.NodeRemove(ctx, node)
+		err := vp.NodeRemove(ctx, *node)
 		if err != nil {
 			return err
 		}
 	}
 	for _, link := range topo.Links {
-		err := vp.LinkRemove(ctx, link)
+		err := vp.LinkRemove(ctx, *link)
 		if err != nil {
 			return err
 		}

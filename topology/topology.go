@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	ErrCorruptYAML       = errors.New("cannot parse YAML file")
 	ErrUnknownNode       = errors.New("unknown node in link endpoints")
 	ErrZeroNodes         = errors.New("topology has no nodes defined")
 	ErrTooFewEndpoints   = errors.New("link has less than two endpoints")
@@ -35,14 +36,13 @@ type Link struct {
 
 // Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
-	Name  string          `yaml:"name"`
-	Nodes map[string]Node `yaml:"nodes"`
-	Links []Link          `yaml:"links"`
+	Name  string           `yaml:"name"`
+	Nodes map[string]*Node `yaml:"nodes"`
+	Links []*Link          `yaml:"links"`
 }
 
 // validate runs sanity checks to ensure that the network topology can be built.
-// It is a value method since validation should not modify the original struct.
-func (topo Topology) Validate() error {
+func (topo Topology) validate() error {
 	if len(topo.Nodes) == 0 {
 		return ErrZeroNodes
 	}
@@ -70,42 +70,36 @@ func (topo Topology) Validate() error {
 	return nil
 }
 
-// Enrich populates missing fields in the original Topology struct.
-func (topo Topology) Enrich() (Topology, error) {
-	newNodes := make(map[string]Node, len(topo.Nodes))
+// enrich populates missing fields in the original Topology struct.
+func (topo *Topology) enrich() error {
 	for name, node := range topo.Nodes {
-		newNode := Node{Name: name, Image: node.Image, Binds: node.Binds}
-		links := make([]string, 0)
+		node.Name = name
+		nodeLinks := make([]string, 0)
 		for _, link := range topo.Links {
 			for _, ep := range link.Endpoints {
 				if !strings.Contains(ep, name) {
 					continue
 				}
-				links = append(links, link.Name)
+				nodeLinks = append(nodeLinks, link.Name)
 			}
 		}
-		newNode.Links = links
-		newNodes[name] = newNode
+		node.Links = nodeLinks
 	}
-	topo.Nodes = newNodes
-	return topo, nil
+	return nil
 }
 
 // FromYAML validates and converts YAML data into a Topology struct.
-// Returning a struct value instead of a pointer is intentional as
-// topology is not supposed to be modified by the caller.
-func FromYAML(data []byte) (Topology, error) {
+func FromYAML(data []byte) (*Topology, error) {
 	var topo Topology
 	err := yaml.Unmarshal(data, &topo)
 	if err != nil {
-		return Topology{}, err
+		return nil, errors.Join(ErrCorruptYAML, err)
 	}
-	if err := topo.Validate(); err != nil {
-		return Topology{}, err
+	if err := topo.validate(); err != nil {
+		return nil, err
 	}
-	newTopo, err := topo.Enrich()
-	if err != nil {
-		return Topology{}, err
+	if err := topo.enrich(); err != nil {
+		return nil, err
 	}
-	return newTopo, nil
+	return &topo, nil
 }

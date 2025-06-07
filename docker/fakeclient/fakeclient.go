@@ -47,7 +47,7 @@ func (c *Client) NetworkRemove(_ context.Context, networkID string) error {
 		return c.NetworkRemoveErr
 	}
 	if _, ok := c.Networks[networkID]; !ok {
-		return fmt.Errorf("network %s does not exists", networkID)
+		return fmt.Errorf("network %s does not exist", networkID)
 	}
 	delete(c.Networks, networkID)
 	return nil
@@ -81,7 +81,7 @@ func (c *Client) ContainerRemove(_ context.Context, containerID string, _ contai
 		return c.ContainerRemoveErr
 	}
 	if _, ok := c.Containers[containerID]; !ok {
-		return fmt.Errorf("container %s does not exists", containerID)
+		return fmt.Errorf("container %s does not exist", containerID)
 	}
 	delete(c.Containers, containerID)
 	return nil
@@ -93,7 +93,7 @@ func (c *Client) ContainerList(_ context.Context, _ container.ListOptions) ([]co
 	}
 	contSumms := make([]container.Summary, 0, len(c.Containers))
 	for name, id := range c.Containers {
-		contSumms = append(contSumms, container.Summary{Names: []string{name}, ID: id})
+		contSumms = append(contSumms, container.Summary{Names: []string{"/" + name}, ID: id})
 	}
 	return contSumms, nil
 }

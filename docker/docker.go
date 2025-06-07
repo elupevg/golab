@@ -37,7 +37,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if exists {
-		fmt.Printf("[SKIP] Docker network %q already exists\n", link.Name)
+		fmt.Printf("[SKIPPED] Docker network %q already exists\n", link.Name)
 		return nil
 	}
 	// Otherwise, create a new Docker network.
@@ -81,7 +81,7 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if !exists {
-		fmt.Printf("[SKIP] Docker network %q already removed\n", link.Name)
+		fmt.Printf("[SKIPPED] Docker network %q already removed\n", link.Name)
 		return nil
 	}
 	// Otherwise, remove a Docker network.
@@ -138,7 +138,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if exists {
-		fmt.Printf("[SKIP] Docker container %q already exists\n", node.Name)
+		fmt.Printf("[SKIPPED] Docker container %q already exists\n", node.Name)
 		return nil
 	}
 	// Generate new container configuration
@@ -176,7 +176,7 @@ func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if !exists {
-		fmt.Printf("[SKIP] Docker container %q already removed\n", node.Name)
+		fmt.Printf("[SKIPPED] Docker container %q already removed\n", node.Name)
 		return err
 	}
 	// Remove container

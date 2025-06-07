@@ -8,179 +8,173 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-const testYAML = `
-name: "triangle"
-nodes:
-  frr01:
-    image: "quay.io/frrouting/frr:master"
-    binds:
-      - "frr01:/etc/frr"
-  frr02:
-    image: "quay.io/frrouting/frr:master"
-  frr03:
-    image: "quay.io/frrouting/frr:master"
-links:
-  - endpoints: ["frr01:eth1", "frr02:eth1"]
-    name: "golab-link-1"
-    ipv4_subnet: 100.100.0.0/29
-    ipv4_gateway: 100.100.0.6
-  - endpoints: ["frr01:eth2", "frr03:eth1"]
-    name: "golab-link-2"
-  - endpoints: ["frr02:eth2", "frr03:eth2"]
-    name: "golab-link-3"
-`
-
-func TestTopologyFromYAML(t *testing.T) {
-	t.Parallel()
-	want := topology.Topology{
-		Name: "triangle",
-		Nodes: map[string]topology.Node{
-			"frr01": {
-				Name:  "frr01",
-				Image: "quay.io/frrouting/frr:master",
-				Binds: []string{"frr01:/etc/frr"},
-				Links: []string{"golab-link-1", "golab-link-2"},
-			},
-			"frr02": {
-				Name:  "frr02",
-				Image: "quay.io/frrouting/frr:master",
-				Links: []string{"golab-link-1", "golab-link-3"},
-			},
-			"frr03": {
-				Name:  "frr03",
-				Image: "quay.io/frrouting/frr:master",
-				Links: []string{"golab-link-2", "golab-link-3"},
-			},
-		},
-		Links: []topology.Link{
-			{
-				Endpoints:   []string{"frr01:eth1", "frr02:eth1"},
-				Name:        "golab-link-1",
-				IPv4Subnet:  "100.100.0.0/29",
-				IPv4Gateway: "100.100.0.6",
-			},
-			{
-				Endpoints: []string{"frr01:eth2", "frr03:eth1"},
-				Name:      "golab-link-2",
-			},
-			{
-				Endpoints: []string{"frr02:eth2", "frr03:eth2"},
-				Name:      "golab-link-3",
-			},
-		},
-	}
-	got, err := topology.FromYAML([]byte(testYAML))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Error(diff)
-	}
-}
-
-func TestTopologyFromYAMLError(t *testing.T) {
+func TestFromYAML(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		name   string
-		data   []byte
-		errMsg string
+		name string
+		data string
+		want *topology.Topology
 	}{
 		{
-			name:   "CorruptYAML",
-			data:   []byte(`name`),
-			errMsg: "[1:1] string was used where mapping is expected\n>  1 | name\n       ^\n",
-		},
-		{
-			name:   "ZeroNodesYAML",
-			data:   []byte(`name: "triangle"`),
-			errMsg: "topology has no nodes defined",
+			name: "ManualData",
+			data: `
+                        name: "triangle"
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                            binds: ["frr01:/etc/frr", "/lib/modules"]
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                            binds: ["frr02:/etc/frr", "/lib/modules"]
+                          frr03:
+                            image: "quay.io/frrouting/frr:master"
+                            binds: ["frr03:/etc/frr", "/lib/modules"]
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                            name: "golab-link-1"
+                            ipv4_subnet:  "100.64.1.0/29"
+                            ipv4_gateway: "100.64.1.6"
+                          - endpoints: ["frr01:eth1", "frr03:eth0"]
+                            name: "golab-link-2"
+                            ipv4_subnet:  "100.64.2.0/29"
+                            ipv4_gateway: "100.64.2.6"
+                          - endpoints: ["frr02:eth1", "frr03:eth1"]
+                            name: "golab-link-3"
+                            ipv4_subnet:  "100.64.3.0/29"
+                            ipv4_gateway: "100.64.3.6"
+                        `,
+			want: &topology.Topology{
+				Name: "triangle",
+				Nodes: map[string]*topology.Node{
+					"frr01": {
+						Name:  "frr01",
+						Image: "quay.io/frrouting/frr:master",
+						Binds: []string{"frr01:/etc/frr", "/lib/modules"},
+						Links: []string{"golab-link-1", "golab-link-2"},
+					},
+					"frr02": {
+						Name:  "frr02",
+						Image: "quay.io/frrouting/frr:master",
+						Binds: []string{"frr02:/etc/frr", "/lib/modules"},
+						Links: []string{"golab-link-1", "golab-link-3"},
+					},
+					"frr03": {
+						Name:  "frr03",
+						Image: "quay.io/frrouting/frr:master",
+						Binds: []string{"frr03:/etc/frr", "/lib/modules"},
+						Links: []string{"golab-link-2", "golab-link-3"},
+					},
+				},
+				Links: []*topology.Link{
+					{
+						Endpoints:   []string{"frr01:eth0", "frr02:eth0"},
+						Name:        "golab-link-1",
+						IPv4Subnet:  "100.64.1.0/29",
+						IPv4Gateway: "100.64.1.6",
+					},
+					{
+						Endpoints:   []string{"frr01:eth1", "frr03:eth0"},
+						Name:        "golab-link-2",
+						IPv4Subnet:  "100.64.2.0/29",
+						IPv4Gateway: "100.64.2.6",
+					},
+					{
+						Endpoints:   []string{"frr02:eth1", "frr03:eth1"},
+						Name:        "golab-link-3",
+						IPv4Subnet:  "100.64.3.0/29",
+						IPv4Gateway: "100.64.3.6",
+					},
+				},
+			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := topology.FromYAML(tc.data)
-			var errMsg string
+			got, err := topology.FromYAML([]byte(tc.data))
 			if err != nil {
-				errMsg = err.Error()
+				t.Fatal(err)
 			}
-			if tc.errMsg != errMsg {
-				t.Fatalf("error: want %q, got %q", tc.errMsg, errMsg)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Error(diff)
 			}
 		})
 	}
 }
 
-func TestTopologyValidate(t *testing.T) {
+func TestFromYAML_Errors(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		name string
-		topo topology.Topology
+		data string
 		err  error
 	}{
 		{
-			name: "Success",
-			topo: topology.Topology{
-				Name: "triangle",
-				Nodes: map[string]topology.Node{
-					"frr01": {Image: "quay.io/frrouting/frr:master"},
-					"frr02": {Image: "quay.io/frrouting/frr:master"},
-					"frr03": {Image: "quay.io/frrouting/frr:master"},
-				},
-				Links: []topology.Link{
-					{Endpoints: []string{"frr01:eth1", "frr02:eth1"}},
-					{Endpoints: []string{"frr01:eth2", "frr03:eth1"}},
-					{Endpoints: []string{"frr02:eth2", "frr03:eth2"}},
-				},
-			},
+			name: "CorruptYAML",
+			data: `
+                        name
+                        nodes:
+                          frr01:
+                          frr02:
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrCorruptYAML,
 		},
 		{
 			name: "ZeroNodes",
-			topo: topology.Topology{Name: "triangle"},
+			data: `name: "triangle"`,
 			err:  topology.ErrZeroNodes,
 		},
 		{
 			name: "LinkWithOneEndpoint",
-			topo: topology.Topology{
-				Nodes: map[string]topology.Node{"frr01": {}},
-				Links: []topology.Link{{Endpoints: []string{"frr01:eth1"}}},
-			},
+			data: `
+                        nodes:
+                          frr01:
+                        links:
+                          - endpoints: ["frr01:eth0"]
+                        `,
 			err: topology.ErrTooFewEndpoints,
 		},
 		{
 			name: "InvalidEndpoint",
-			topo: topology.Topology{
-				Nodes: map[string]topology.Node{"frr01": {}, "frr02": {}},
-				Links: []topology.Link{{Endpoints: []string{"frr01:eth1", "frr02-eth1"}}},
-			},
+			data: `
+                        nodes:
+                          frr01:
+                          frr02:
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02-eth1"]
+                        `,
 			err: topology.ErrInvalidEndpoint,
 		},
 		{
 			name: "UnknownNode",
-			topo: topology.Topology{
-				Nodes: map[string]topology.Node{"frr01": {}, "frr02": {}},
-				Links: []topology.Link{{Endpoints: []string{"frr01:eth1", "frr03:eth1"}}},
-			},
+			data: `
+                        nodes:
+                          frr01:
+                          frr02:
+                        links:
+                          - endpoints: ["frr01:eth0", "frr03:eth0"]
+                        `,
 			err: topology.ErrUnknownNode,
 		},
 		{
 			name: "InvalidIPv4Subnet",
-			topo: topology.Topology{
-				Nodes: map[string]topology.Node{"frr01": {}, "frr02": {}},
-				Links: []topology.Link{
-					{
-						Endpoints:  []string{"frr01:eth1", "frr02:eth1"},
-						IPv4Subnet: "256.256.256.0/24",
-					},
-				},
-			},
+			data: `
+                        nodes:
+                          frr01:
+                          frr02:
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                            ipv4_subnet: "256.0.0.0/29"
+                        `,
 			err: topology.ErrInvalidIPv4Subnet,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.topo.Validate()
-			if !errors.Is(tc.err, err) {
-				t.Errorf("errors: want %q, got %q", tc.err, err)
+			_, err := topology.FromYAML([]byte(tc.data))
+			if !errors.Is(err, tc.err) {
+				t.Errorf("error: want %q, got %q", tc.err, err)
 			}
 		})
 	}
