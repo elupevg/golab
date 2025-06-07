@@ -167,7 +167,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             ipv4_subnet: "256.0.0.0/29"
                         `,
-			err: topology.ErrInvalidIPv4Subnet,
+			err: topology.ErrInvalidIP,
 		},
 	}
 	for _, tc := range testCases {

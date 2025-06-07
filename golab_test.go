@@ -19,7 +19,11 @@ nodes:
     image: "quay.io/frrouting/frr:master"
 links:
   - endpoints: ["frr01:eth1", "frr02:eth1"]
+    ipv4_subnet: 100.64.1.0/29
+    ipv4_gateway: 100.64.1.6
   - endpoints: ["frr01:eth2", "frr03:eth1"]
+    ipv4_subnet: 100.64.2.0/29
+    ipv4_gateway: 100.64.2.6
 `
 
 type stubVirtProvider struct {
