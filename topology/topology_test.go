@@ -2,6 +2,7 @@ package topology_test
 
 import (
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/elupevg/golab/topology"
@@ -45,44 +46,93 @@ func TestFromYAML(t *testing.T) {
                         `,
 			want: &topology.Topology{
 				Name: "triangle",
+				IPv4Range: &net.IPNet{
+					IP:   net.ParseIP("100.64.0.0"),
+					Mask: net.CIDRMask(24, 32),
+				},
 				Nodes: map[string]*topology.Node{
 					"frr01": {
 						Name:  "frr01",
 						Image: "quay.io/frrouting/frr:master",
 						Binds: []string{"frr01:/etc/frr", "/lib/modules"},
-						Links: []string{"golab-link-1", "golab-link-2"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								IPv4: net.ParseIP("100.64.1.1"),
+							},
+							{
+								Name: "eth1",
+								Link: "golab-link-2",
+								IPv4: net.ParseIP("100.64.2.1"),
+							},
+						},
 					},
 					"frr02": {
 						Name:  "frr02",
 						Image: "quay.io/frrouting/frr:master",
 						Binds: []string{"frr02:/etc/frr", "/lib/modules"},
-						Links: []string{"golab-link-1", "golab-link-3"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								IPv4: net.ParseIP("100.64.1.2"),
+							},
+							{
+								Name: "eth1",
+								Link: "golab-link-3",
+								IPv4: net.ParseIP("100.64.3.1"),
+							},
+						},
 					},
 					"frr03": {
 						Name:  "frr03",
 						Image: "quay.io/frrouting/frr:master",
 						Binds: []string{"frr03:/etc/frr", "/lib/modules"},
-						Links: []string{"golab-link-2", "golab-link-3"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-2",
+								IPv4: net.ParseIP("100.64.2.2"),
+							},
+							{
+								Name: "eth1",
+								Link: "golab-link-3",
+								IPv4: net.ParseIP("100.64.3.2"),
+							},
+						},
 					},
 				},
 				Links: []*topology.Link{
 					{
-						Endpoints:   []string{"frr01:eth0", "frr02:eth0"},
-						Name:        "golab-link-1",
-						IPv4Subnet:  "100.64.1.0/29",
-						IPv4Gateway: "100.64.1.6",
+						Endpoints:     []string{"frr01:eth0", "frr02:eth0"},
+						Name:          "golab-link-1",
+						RawIPv4Subnet: "100.64.1.0/29",
+						IPv4Subnet: &net.IPNet{
+							IP:   net.ParseIP("100.64.1.0"),
+							Mask: net.CIDRMask(29, 32),
+						},
+						IPv4Gateway: net.ParseIP("100.64.1.6"),
 					},
 					{
-						Endpoints:   []string{"frr01:eth1", "frr03:eth0"},
-						Name:        "golab-link-2",
-						IPv4Subnet:  "100.64.2.0/29",
-						IPv4Gateway: "100.64.2.6",
+						Endpoints:     []string{"frr01:eth1", "frr03:eth0"},
+						Name:          "golab-link-2",
+						RawIPv4Subnet: "100.64.2.0/29",
+						IPv4Subnet: &net.IPNet{
+							IP:   net.ParseIP("100.64.2.0"),
+							Mask: net.CIDRMask(29, 32),
+						},
+						IPv4Gateway: net.ParseIP("100.64.2.6"),
 					},
 					{
-						Endpoints:   []string{"frr02:eth1", "frr03:eth1"},
-						Name:        "golab-link-3",
-						IPv4Subnet:  "100.64.3.0/29",
-						IPv4Gateway: "100.64.3.6",
+						Endpoints:     []string{"frr02:eth1", "frr03:eth1"},
+						Name:          "golab-link-3",
+						RawIPv4Subnet: "100.64.3.0/29",
+						IPv4Subnet: &net.IPNet{
+							IP:   net.ParseIP("100.64.3.0"),
+							Mask: net.CIDRMask(29, 32),
+						},
+						IPv4Gateway: net.ParseIP("100.64.3.6"),
 					},
 				},
 			},
@@ -130,6 +180,7 @@ func TestFromYAML_Errors(t *testing.T) {
 			data: `
                         nodes:
                           frr01:
+                            image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0"]
                         `,
@@ -139,10 +190,12 @@ func TestFromYAML_Errors(t *testing.T) {
 			name: "InvalidEndpoint",
 			data: `
                         nodes:
-                          frr01:
-                          frr02:
+                          frr11:
+                            image: "quay.io/frrouting/frr:master"
+                          frr12:
+                            image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02-eth1"]
+                          - endpoints: ["frr11:eth0", "frr12-eth1"]
                         `,
 			err: topology.ErrInvalidEndpoint,
 		},
@@ -151,7 +204,9 @@ func TestFromYAML_Errors(t *testing.T) {
 			data: `
                         nodes:
                           frr01:
+                            image: "quay.io/frrouting/frr:master"
                           frr02:
+                            image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0", "frr03:eth0"]
                         `,
@@ -162,12 +217,14 @@ func TestFromYAML_Errors(t *testing.T) {
 			data: `
                         nodes:
                           frr01:
+                            image: "quay.io/frrouting/frr:master"
                           frr02:
+                            image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             ipv4_subnet: "256.0.0.0/29"
                         `,
-			err: topology.ErrInvalidIP,
+			err: topology.ErrInvalidCIDR,
 		},
 	}
 	for _, tc := range testCases {

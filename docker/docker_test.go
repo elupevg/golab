@@ -3,6 +3,7 @@ package docker_test
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 
 	"github.com/elupevg/golab/docker"
@@ -15,8 +16,22 @@ func TestLinkCreateRemove(t *testing.T) {
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
 	dp := docker.New(fakeDockerClient)
-	link1 := topology.Link{Name: "golab-link-1", IPv4Subnet: "100.11.0.0/29", IPv4Gateway: "100.11.0.6"}
-	link2 := topology.Link{Name: "golab-link-2", IPv4Subnet: "100.22.0.0/29", IPv4Gateway: "100.22.0.6"}
+	link1 := topology.Link{
+		Name: "golab-link-1",
+		IPv4Subnet: &net.IPNet{
+			IP:   net.ParseIP("100.11.0.0"),
+			Mask: net.CIDRMask(29, 32),
+		},
+		IPv4Gateway: net.ParseIP("100.11.0.6"),
+	}
+	link2 := topology.Link{
+		Name: "golab-link-2",
+		IPv4Subnet: &net.IPNet{
+			IP:   net.ParseIP("100.22.0.0"),
+			Mask: net.CIDRMask(29, 32),
+		},
+		IPv4Gateway: net.ParseIP("100.22.0.6"),
+	}
 	// Network creation
 	err := dp.LinkCreate(ctx, link1)
 	if err != nil {

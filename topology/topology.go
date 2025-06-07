@@ -4,13 +4,18 @@ package topology
 import (
 	"errors"
 	"fmt"
-	"net/netip"
+	"net"
 	"strings"
 
+	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/goccy/go-yaml"
 )
 
-const linkNamePrefix = "golab-link"
+const (
+	linkNamePrefix       = "golab-link"
+	defaultIPv4Range     = "100.64.0.0/24"
+	defaultIPv4PrefixLen = 29
+)
 
 var (
 	ErrCorruptYAML      = errors.New("cannot parse YAML file")
@@ -18,125 +23,104 @@ var (
 	ErrZeroNodes        = errors.New("topology has no nodes defined")
 	ErrTooFewEndpoints  = errors.New("link has less than two endpoints")
 	ErrInvalidEndpoint  = errors.New("invalid endpoint format")
-	ErrInvalidIP        = errors.New("cannot parse IP address/prefix")
-	ErrInvalidGW        = errors.New("invalid gateway IP address")
+	ErrInvalidCIDR      = errors.New("cannot parse IP")
 	ErrInvalidInterface = errors.New("invalid interface name")
 )
 
 // Node represents a node in a virtual network topology.
 type Node struct {
-	Name  string
-	Image string `yaml:"image"`
-	Links []string
-	Binds []string `yaml:"binds"`
+	Name       string
+	Image      string   `yaml:"image"`
+	Binds      []string `yaml:"binds"`
+	Interfaces []*Interface
+}
+
+type Interface struct {
+	Name string
+	Link string
+	IPv4 net.IP
 }
 
 // Link represents a link in a virtual network topology.
 type Link struct {
-	Endpoints   []string `yaml:"endpoints"`
-	Name        string   `yaml:"name"`
-	IPv4Subnet  string   `yaml:"ipv4_subnet"`
-	IPv4Gateway string   `yaml:"ipv4_gateway"`
-}
-
-// validateIP verifies the sanity of the link IP configuration.
-func (l Link) validateIP() error {
-	ipv4net, err := netip.ParsePrefix(l.IPv4Subnet)
-	if err != nil {
-		return fmt.Errorf("%w: %q", ErrInvalidIP, l.IPv4Subnet)
-	}
-	ipv4gw, err := netip.ParseAddr(l.IPv4Gateway)
-	if err != nil {
-		return fmt.Errorf("%w: %q", ErrInvalidIP, l.IPv4Gateway)
-	}
-	if !ipv4net.Contains(ipv4gw) {
-		return fmt.Errorf("%w: %s not in %s", ErrInvalidGW, l.IPv4Gateway, l.IPv4Subnet)
-	}
-	return nil
+	Endpoints     []string `yaml:"endpoints"`
+	Name          string   `yaml:"name"`
+	RawIPv4Subnet string   `yaml:"ipv4_subnet"`
+	IPv4Subnet    *net.IPNet
+	IPv4Gateway   net.IP
 }
 
 // Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
-	Name  string           `yaml:"name"`
-	Nodes map[string]*Node `yaml:"nodes"`
-	Links []*Link          `yaml:"links"`
+	Name      string           `yaml:"name"`
+	Nodes     map[string]*Node `yaml:"nodes"`
+	Links     []*Link          `yaml:"links"`
+	IPv4Range *net.IPNet
 }
 
-// validator represents a topology sanity check.
-type validator func() error
-
-// validateNodes checks whether topology defines at least one node.
-func (topo Topology) validateNodes() error {
+// populate validates user-provided data and populates missing fields.
+func (topo *Topology) populate() error {
+	// check if at least one node is defined
 	if len(topo.Nodes) == 0 {
 		return ErrZeroNodes
 	}
-	return nil
-}
+	// Prepare default IP pools
+	_, ipv4Range, _ := net.ParseCIDR(defaultIPv4Range)
+	topo.IPv4Range = ipv4Range
 
-// validateEndpoint checks whether the provided string represents a valid network endpoint.
-func (topo Topology) validateEndpoint(ep string) error {
-	parts := strings.Split(ep, ":")
-	if len(parts) != 2 {
-		return fmt.Errorf("%w: %q", ErrInvalidEndpoint, ep)
-	}
-	node, iface := parts[0], parts[1]
-	if _, ok := topo.Nodes[node]; !ok {
-		return fmt.Errorf("%w: %q in %q", ErrUnknownNode, node, ep)
-	}
-	if !strings.HasPrefix(iface, "eth") {
-		return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
-	}
-	return nil
-}
-
-// validateLinks checks endpoints and IP data associated with each link.
-func (topo Topology) validateLinks() error {
-	for _, link := range topo.Links {
-		if len(link.Endpoints) < 2 {
-			return ErrTooFewEndpoints
-		}
-		for _, ep := range link.Endpoints {
-			if err := topo.validateEndpoint(ep); err != nil {
-				return err
-			}
-		}
-		if err := link.validateIP(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// validate runs sanity checks to ensure that the network topology can be built.
-func (topo Topology) validate() error {
-	validators := []validator{
-		topo.validateNodes,
-		topo.validateLinks,
-	}
-	for _, validator := range validators {
-		if err := validator(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// enrich populates missing fields in the original Topology struct.
-func (topo *Topology) enrich() error {
 	for name, node := range topo.Nodes {
 		node.Name = name
-		nodeLinks := make([]string, 0)
-		for i, link := range topo.Links {
-			// auto-assign link names
-			link.Name = fmt.Sprintf("%s-%d", linkNamePrefix, i+1)
-			for _, ep := range link.Endpoints {
-				if !strings.Contains(ep, name) {
-					continue
-				}
-				nodeLinks = append(nodeLinks, link.Name)
+	}
+
+	for i, link := range topo.Links {
+		// auto-assign link name
+		link.Name = fmt.Sprintf("%s-%d", linkNamePrefix, i+1)
+
+		// Validate or assign IP subnet
+		if link.RawIPv4Subnet == "" {
+			link.IPv4Subnet, _ = cidr.NextSubnet(topo.IPv4Range, defaultIPv4PrefixLen)
+		} else {
+			_, ipv4net, err := net.ParseCIDR(link.RawIPv4Subnet)
+			if err != nil {
+				return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv4Subnet)
 			}
+			link.IPv4Subnet = ipv4net
 		}
-		node.Links = nodeLinks
+
+		// Gateway is the last IP usable address of the subnet
+		_, bcast := cidr.AddressRange(link.IPv4Subnet)
+		link.IPv4Gateway = cidr.Dec(bcast)
+
+		// check that link has at least two endpoints
+		if len(link.Endpoints) < 2 {
+			return fmt.Errorf("%w: %s", ErrTooFewEndpoints, link.Name)
+		}
+		for j, ep := range link.Endpoints {
+			parts := strings.Split(ep, ":")
+			if len(parts) != 2 {
+				return fmt.Errorf("%w: %q", ErrInvalidEndpoint, ep)
+			}
+			nodeName, iface := parts[0], parts[1]
+			node, ok := topo.Nodes[nodeName]
+			if !ok {
+				return fmt.Errorf("%w: %q in %q", ErrUnknownNode, nodeName, ep)
+			}
+			if !strings.HasPrefix(iface, "eth") {
+				return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
+			}
+			ipv4Addr, err := cidr.Host(link.IPv4Subnet, j+1)
+			if err != nil {
+				return err
+			}
+			if node.Interfaces == nil {
+				node.Interfaces = make([]*Interface, 0)
+			}
+			node.Interfaces = append(node.Interfaces, &Interface{
+				Name: iface,
+				Link: link.Name,
+				IPv4: ipv4Addr,
+			})
+		}
 	}
 	return nil
 }
@@ -148,10 +132,7 @@ func FromYAML(data []byte) (*Topology, error) {
 	if err != nil {
 		return nil, errors.Join(ErrCorruptYAML, err)
 	}
-	if err := topo.validate(); err != nil {
-		return nil, err
-	}
-	if err := topo.enrich(); err != nil {
+	if err := topo.populate(); err != nil {
 		return nil, err
 	}
 	return &topo, nil

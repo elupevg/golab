@@ -45,8 +45,8 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{
 				{
-					Subnet:  link.IPv4Subnet,
-					Gateway: link.IPv4Gateway,
+					Subnet:  link.IPv4Subnet.String(),
+					Gateway: link.IPv4Gateway.String(),
 				},
 			},
 		},
@@ -123,9 +123,13 @@ func generateMounts(node topology.Node) []mount.Mount {
 
 // generateNetworkConfig converts node configuration into Docker container network configuration.
 func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
-	endpoints := make(map[string]*network.EndpointSettings, len(node.Links))
-	for _, link := range node.Links {
-		endpoints[link] = &network.EndpointSettings{}
+	endpoints := make(map[string]*network.EndpointSettings, len(node.Interfaces))
+	for _, iface := range node.Interfaces {
+		endpoints[iface.Link] = &network.EndpointSettings{
+			IPAMConfig: &network.EndpointIPAMConfig{
+				IPv4Address: iface.IPv4.String(),
+			},
+		}
 	}
 	return &network.NetworkingConfig{EndpointsConfig: endpoints}
 }
