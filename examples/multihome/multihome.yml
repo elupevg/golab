@@ -1,0 +1,26 @@
+name: "multihome"
+nodes:
+  router:
+    image: "quay.io/frrouting/frr:master"
+    binds:
+      - "/lib/modules:/lib/modules"
+      - "/home/evgeny/multihome/router:/etc/frr"
+  isp1:
+    image: "quay.io/frrouting/frr:master"
+    binds:
+      - "/lib/modules:/lib/modules"
+      - "/home/evgeny/multihome/isp1:/etc/frr"
+  isp2:
+    image: "quay.io/frrouting/frr:master"
+    binds:
+      - "/lib/modules:/lib/modules"
+      - "/home/evgeny/multihome/isp2:/etc/frr"
+links:
+  - endpoints: ["router:eth0", "isp1:eth0"]
+    name: "isp1"
+    ipv4_subnet: "100.11.0.0/29"
+    ipv4_gateway: "100.11.0.6"
+  - endpoints: ["router:eth1", "isp2:eth0"]
+    name: "isp2"
+    ipv4_subnet: "100.22.0.0/29"
+    ipv4_gateway: "100.22.0.6"
