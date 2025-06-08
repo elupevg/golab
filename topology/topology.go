@@ -61,37 +61,39 @@ type Topology struct {
 	AutoIPv4 *net.IPNet
 }
 
-// populate validates data provided by the user and auto-populates missing fields.
-func (topo *Topology) populate() error {
-	// check if at least one node is defined
+// populateNodes runs sanity checks on nodes and populates empty fields.
+func (topo *Topology) populateNodes() error {
+	// topology must contain at least one node
 	if len(topo.Nodes) == 0 {
 		return ErrZeroNodes
 	}
-	// initialize IP pools for auto-allocation
-	_, autoIPv4net, _ := net.ParseCIDR(autoIPv4FirstSubnet)
-	topo.AutoIPv4 = autoIPv4net
 	// populate node names
 	for name, node := range topo.Nodes {
 		node.Name = name
 	}
+	return nil
+}
+
+// populateLinks runs sanity checks on links and populates empty fields.
+func (topo *Topology) populateLinks() error {
 	for i, link := range topo.Links {
-		// populate missing link names
+		// populate empty link names
 		if link.Name == "" {
 			link.Name = autoLinkNamePrefix + strconv.Itoa(i+1)
 		}
 		if link.RawIPv4Subnet == "" {
-			// auto-assign next available IP subnet
+			// allocate next available IPv4 subnet
 			link.IPv4Subnet = topo.AutoIPv4
 			topo.AutoIPv4, _ = cidr.NextSubnet(topo.AutoIPv4, autoIPv4PrefixLen)
 		} else {
-			// or validate manually assigned IP subnet
+			// validate IP subnet if manually allocated by the user
 			_, ipv4net, err := net.ParseCIDR(link.RawIPv4Subnet)
 			if err != nil {
 				return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv4Subnet)
 			}
 			link.IPv4Subnet = ipv4net
 		}
-		// gateway is the last usable IP address of the subnet
+		// allocate last usable IP address of the subnet as a gateway
 		_, bcast := cidr.AddressRange(link.IPv4Subnet)
 		link.IPv4Gateway = cidr.Dec(bcast)
 		// check that link has at least two endpoints
@@ -99,19 +101,22 @@ func (topo *Topology) populate() error {
 			return fmt.Errorf("%w: %s", ErrTooFewEndpoints, link.Name)
 		}
 		for j, ep := range link.Endpoints {
-			// validate sanity of each endpoint and map them to nodes
+			// validate endpoint string format
 			parts := strings.Split(ep, ":")
 			if len(parts) != 2 {
 				return fmt.Errorf("%w: %q", ErrInvalidEndpoint, ep)
 			}
+			// map an endpoint to a node
 			nodeName, iface := parts[0], parts[1]
 			node, ok := topo.Nodes[nodeName]
 			if !ok {
 				return fmt.Errorf("%w: %q in %q", ErrUnknownNode, nodeName, ep)
 			}
+			// validate interface name
 			if !strings.HasPrefix(iface, "eth") {
 				return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
 			}
+			// allocate IP addresses
 			ipv4Addr, err := cidr.Host(link.IPv4Subnet, j+1)
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
@@ -121,6 +126,31 @@ func (topo *Topology) populate() error {
 				Link: link.Name,
 				IPv4: ipv4Addr,
 			})
+		}
+	}
+	return nil
+}
+
+// populateIPRanges runs sanity checks and initializes the IP pools for auto-allocation.
+func (topo *Topology) populateIPRanges() error {
+	_, autoIPv4net, _ := net.ParseCIDR(autoIPv4FirstSubnet)
+	topo.AutoIPv4 = autoIPv4net
+	return nil
+}
+
+// validator represents a generic validation check for a specific part of the topology.
+type validator func() error
+
+// populate runs sanity checks on the topology and populates empty fields.
+func (topo *Topology) populate() error {
+	validators := []validator{
+		topo.populateNodes,
+		topo.populateIPRanges,
+		topo.populateLinks,
+	}
+	for _, validator := range validators {
+		if err := validator(); err != nil {
+			return err
 		}
 	}
 	return nil
