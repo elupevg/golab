@@ -2,19 +2,13 @@ name: "multihome"
 nodes:
   router:
     image: "quay.io/frrouting/frr:master"
-    binds:
-      - "/lib/modules:/lib/modules"
-      - "/home/evgeny/multihome/router:/etc/frr"
+    binds: ["router:/etc/frr"]
   isp1:
     image: "quay.io/frrouting/frr:master"
-    binds:
-      - "/lib/modules:/lib/modules"
-      - "/home/evgeny/multihome/isp1:/etc/frr"
+    binds: ["isp1:/etc/frr"]
   isp2:
     image: "quay.io/frrouting/frr:master"
-    binds:
-      - "/lib/modules:/lib/modules"
-      - "/home/evgeny/multihome/isp2:/etc/frr"
+    binds: ["isp2:/etc/frr"]
 links:
   - endpoints: ["isp1:eth0", "router:eth0"]
   - endpoints: ["isp2:eth0", "router:eth1"]
