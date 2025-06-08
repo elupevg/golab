@@ -278,10 +278,23 @@ func TestFromYAML_Errors(t *testing.T) {
 			err: topology.ErrTooFewEndpoints,
 		},
 		{
+			name: "NodeWithoutFields",
+			data: `
+                        nodes:
+                          frr01:
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrMissingImage,
+		},
+		{
 			name: "MissingImage",
 			data: `
                         nodes:
                           frr01:
+                            image: ""
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
