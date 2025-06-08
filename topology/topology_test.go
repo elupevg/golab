@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/elupevg/golab/topology"
+	"github.com/elupevg/golab/vendors"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -49,9 +50,10 @@ func TestFromYAML(t *testing.T) {
 				},
 				Nodes: map[string]*topology.Node{
 					"frr01": {
-						Name:  "frr01",
-						Image: "quay.io/frrouting/frr:master",
-						Binds: []string{"frr01:/etc/frr", "/lib/modules"},
+						Name:   "frr01",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"frr01:/etc/frr", "/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -66,9 +68,10 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					"frr02": {
-						Name:  "frr02",
-						Image: "quay.io/frrouting/frr:master",
-						Binds: []string{"frr02:/etc/frr", "/lib/modules"},
+						Name:   "frr02",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"frr02:/etc/frr", "/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -83,9 +86,10 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					"frr03": {
-						Name:  "frr03",
-						Image: "quay.io/frrouting/frr:master",
-						Binds: []string{"frr03:/etc/frr", "/lib/modules"},
+						Name:   "frr03",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"frr03:/etc/frr", "/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -157,8 +161,9 @@ func TestFromYAML(t *testing.T) {
 				},
 				Nodes: map[string]*topology.Node{
 					"router": {
-						Name:  "router",
-						Image: "quay.io/frrouting/frr:master",
+						Name:   "router",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -173,8 +178,9 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					"isp1": {
-						Name:  "isp1",
-						Image: "quay.io/frrouting/frr:master",
+						Name:   "isp1",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -184,8 +190,9 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					"isp2": {
-						Name:  "isp2",
-						Image: "quay.io/frrouting/frr:master",
+						Name:   "isp2",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -246,7 +253,9 @@ func TestFromYAML_Errors(t *testing.T) {
                         name
                         nodes:
                           frr01:
+                            image: "quay.io/frrouting/frr:master"
                           frr02:
+                            image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                         `,
@@ -267,6 +276,18 @@ func TestFromYAML_Errors(t *testing.T) {
                           - endpoints: ["frr01:eth0"]
                         `,
 			err: topology.ErrTooFewEndpoints,
+		},
+		{
+			name: "MissingImage",
+			data: `
+                        nodes:
+                          frr01:
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrMissingImage,
 		},
 		{
 			name: "InvalidEndpoint",

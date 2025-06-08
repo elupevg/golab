@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/apparentlymart/go-cidr/cidr"
+	"github.com/elupevg/golab/vendors"
 	"github.com/goccy/go-yaml"
 )
 
@@ -27,6 +28,7 @@ var (
 	ErrInvalidCIDR      = errors.New("cannot parse IP")
 	ErrInvalidInterface = errors.New("invalid interface name")
 	ErrSubnetExhausted  = errors.New("cannot allocate IP address")
+	ErrMissingImage     = errors.New("node is missing image specification")
 )
 
 // Node represents a node in a virtual network topology.
@@ -35,6 +37,7 @@ type Node struct {
 	Image      string   `yaml:"image"`
 	Binds      []string `yaml:"binds"`
 	Interfaces []*Interface
+	Vendor     vendors.Vendor
 }
 
 // Interface respresents a network node attachment to a link.
@@ -67,9 +70,13 @@ func (topo *Topology) populateNodes() error {
 	if len(topo.Nodes) == 0 {
 		return ErrZeroNodes
 	}
-	// populate node names
+	// populate node fields
 	for name, node := range topo.Nodes {
+		if node == nil || node.Image == "" {
+			return fmt.Errorf("%w: %s", ErrMissingImage, name)
+		}
 		node.Name = name
+		node.Vendor = vendors.DetectByImage(node.Image)
 	}
 	return nil
 }
