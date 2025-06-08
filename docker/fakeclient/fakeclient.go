@@ -18,6 +18,7 @@ type Client struct {
 	NetworkListErr     error
 	Networks           map[string]string
 	ContainerCreateErr error
+	ContainerStartErr  error
 	ContainerRemoveErr error
 	ContainerListErr   error
 	Containers         map[string]string
@@ -74,6 +75,16 @@ func (c *Client) ContainerCreate(_ context.Context, _ *container.Config, _ *cont
 	dummyID := strconv.Itoa(len(c.Containers)+1) + "000000000000"
 	c.Containers[name] = dummyID
 	return container.CreateResponse{ID: dummyID}, nil
+}
+
+func (c *Client) ContainerStart(_ context.Context, containerID string, _ container.StartOptions) error {
+	if c.ContainerStartErr != nil {
+		return c.ContainerStartErr
+	}
+	if _, ok := c.Containers[containerID]; !ok {
+		return fmt.Errorf("container %s does not exists", containerID)
+	}
+	return nil
 }
 
 func (c *Client) ContainerRemove(_ context.Context, containerID string, _ container.RemoveOptions) error {
