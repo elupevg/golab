@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/elupevg/golab/vendors"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestDetectByImage(t *testing.T) {
@@ -34,6 +35,34 @@ func TestDetectByImage(t *testing.T) {
 			got := vendors.DetectByImage(tc.image)
 			if tc.want != got {
 				t.Errorf("want %d, got %d", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestExtraBinds(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name   string
+		vendor vendors.Vendor
+		want   []string
+	}{
+		{
+			name:   "FRRouting",
+			vendor: vendors.FRR,
+			want:   []string{"/lib/modules:/lib/modules"},
+		},
+		{
+			name:   "Unknown",
+			vendor: vendors.UNKNOWN,
+			want:   []string{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := vendors.ExtraBinds(tc.vendor)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Error(diff)
 			}
 		})
 	}

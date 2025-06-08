@@ -3,6 +3,7 @@ package topology_test
 import (
 	"errors"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/elupevg/golab/topology"
@@ -24,13 +25,13 @@ func TestFromYAML(t *testing.T) {
                         nodes:
                           frr01:
                             image: "quay.io/frrouting/frr:master"
-                            binds: ["frr01:/etc/frr", "/lib/modules"]
+                            binds: ["frr01:/etc/frr", "/lib/modules:/lib/modules"]
                           frr02:
                             image: "quay.io/frrouting/frr:master"
-                            binds: ["frr02:/etc/frr", "/lib/modules"]
+                            binds: ["frr02:/etc/frr", "/lib/modules:/lib/modules"]
                           frr03:
                             image: "quay.io/frrouting/frr:master"
-                            binds: ["frr03:/etc/frr", "/lib/modules"]
+                            binds: ["frr03:/etc/frr", "/lib/modules:/lib/modules"]
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             name: "ptp1"
@@ -53,7 +54,10 @@ func TestFromYAML(t *testing.T) {
 						Name:   "frr01",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"frr01:/etc/frr", "/lib/modules"},
+						Binds: []string{
+							os.Getenv("PWD") + "/frr01:/etc/frr",
+							"/lib/modules:/lib/modules",
+						},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -71,7 +75,10 @@ func TestFromYAML(t *testing.T) {
 						Name:   "frr02",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"frr02:/etc/frr", "/lib/modules"},
+						Binds: []string{
+							os.Getenv("PWD") + "/frr02:/etc/frr",
+							"/lib/modules:/lib/modules",
+						},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -89,7 +96,10 @@ func TestFromYAML(t *testing.T) {
 						Name:   "frr03",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"frr03:/etc/frr", "/lib/modules"},
+						Binds: []string{
+							os.Getenv("PWD") + "/frr03:/etc/frr",
+							"/lib/modules:/lib/modules",
+						},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -164,6 +174,7 @@ func TestFromYAML(t *testing.T) {
 						Name:   "router",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -181,6 +192,7 @@ func TestFromYAML(t *testing.T) {
 						Name:   "isp1",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -193,6 +205,7 @@ func TestFromYAML(t *testing.T) {
 						Name:   "isp2",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
@@ -368,6 +381,26 @@ func TestFromYAML_Errors(t *testing.T) {
                             ipv4_subnet: 100.64.0.0/31
                         `,
 			err: topology.ErrSubnetExhausted,
+		},
+		{
+			name: "BindNonAbsTarget",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                            binds: ["/home/user/frr01:etc/frr"]
+                        `,
+			err: topology.ErrInvalidBind,
+		},
+		{
+			name: "InvalidBindFormat",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                            binds: ["incorrect"]
+                        `,
+			err: topology.ErrInvalidBind,
 		},
 	}
 	for _, tc := range testCases {

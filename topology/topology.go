@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
+	"path"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -29,6 +32,7 @@ var (
 	ErrInvalidInterface = errors.New("invalid interface name")
 	ErrSubnetExhausted  = errors.New("cannot allocate IP address")
 	ErrMissingImage     = errors.New("node is missing image specification")
+	ErrInvalidBind      = errors.New("invalid bind format")
 )
 
 // Node represents a node in a virtual network topology.
@@ -64,6 +68,37 @@ type Topology struct {
 	AutoIPv4 *net.IPNet
 }
 
+// populateBinds validates/fixes user provided binds and adds vendor-specific ones.
+func (n *Node) populateBinds() error {
+	binds := make([]string, 0)
+	extraBinds := vendors.ExtraBinds(n.Vendor)
+	for _, bind := range n.Binds {
+		// validate user defined binds
+		paths := strings.Split(bind, ":")
+		if len(paths) != 2 {
+			// check that that bind contains source and target
+			return fmt.Errorf("%w: %q", ErrInvalidBind, bind)
+		}
+		source, target := paths[0], paths[1]
+		if !path.IsAbs(target) {
+			// check whether target path is absolute
+			return fmt.Errorf("%w: %q", ErrInvalidBind, bind)
+		}
+		if !path.IsAbs(source) {
+			// convert relative source path to absolute (UNIX only)
+			source = path.Join(os.Getenv("PWD"), source)
+		}
+		bind = source + ":" + target
+		if slices.Contains(extraBinds, bind) {
+			// ignore if user duplicated a vendor-specific bind
+			continue
+		}
+		binds = append(binds, bind)
+	}
+	n.Binds = append(binds, extraBinds...)
+	return nil
+}
+
 // populateNodes runs sanity checks on nodes and populates empty fields.
 func (topo *Topology) populateNodes() error {
 	// topology must contain at least one node
@@ -77,6 +112,9 @@ func (topo *Topology) populateNodes() error {
 		}
 		node.Name = name
 		node.Vendor = vendors.DetectByImage(node.Image)
+		if err := node.populateBinds(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
