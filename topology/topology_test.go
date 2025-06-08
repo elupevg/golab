@@ -32,23 +32,20 @@ func TestFromYAML(t *testing.T) {
                             binds: ["frr03:/etc/frr", "/lib/modules"]
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
-                            name: "golab-link-1"
-                            ipv4_subnet:  "100.64.1.0/29"
-                            ipv4_gateway: "100.64.1.6"
+                            name: "ptp1"
+                            ipv4_subnet: 100.64.1.0/29
                           - endpoints: ["frr01:eth1", "frr03:eth0"]
-                            name: "golab-link-2"
-                            ipv4_subnet:  "100.64.2.0/29"
-                            ipv4_gateway: "100.64.2.6"
+                            name: "ptp2"
+                            ipv4_subnet: 100.64.2.0/29
                           - endpoints: ["frr02:eth1", "frr03:eth1"]
-                            name: "golab-link-3"
-                            ipv4_subnet:  "100.64.3.0/29"
-                            ipv4_gateway: "100.64.3.6"
+                            name: "ptp3"
+                            ipv4_subnet: 100.64.3.0/29
                         `,
 			want: &topology.Topology{
 				Name: "triangle",
-				IPv4Range: &net.IPNet{
+				AutoIPv4: &net.IPNet{
 					IP:   net.ParseIP("100.64.0.0"),
-					Mask: net.CIDRMask(24, 32),
+					Mask: net.CIDRMask(29, 32),
 				},
 				Nodes: map[string]*topology.Node{
 					"frr01": {
@@ -58,12 +55,12 @@ func TestFromYAML(t *testing.T) {
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
-								Link: "golab-link-1",
+								Link: "ptp1",
 								IPv4: net.ParseIP("100.64.1.1"),
 							},
 							{
 								Name: "eth1",
-								Link: "golab-link-2",
+								Link: "ptp2",
 								IPv4: net.ParseIP("100.64.2.1"),
 							},
 						},
@@ -75,12 +72,12 @@ func TestFromYAML(t *testing.T) {
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
-								Link: "golab-link-1",
+								Link: "ptp1",
 								IPv4: net.ParseIP("100.64.1.2"),
 							},
 							{
 								Name: "eth1",
-								Link: "golab-link-3",
+								Link: "ptp3",
 								IPv4: net.ParseIP("100.64.3.1"),
 							},
 						},
@@ -92,12 +89,12 @@ func TestFromYAML(t *testing.T) {
 						Interfaces: []*topology.Interface{
 							{
 								Name: "eth0",
-								Link: "golab-link-2",
+								Link: "ptp2",
 								IPv4: net.ParseIP("100.64.2.2"),
 							},
 							{
 								Name: "eth1",
-								Link: "golab-link-3",
+								Link: "ptp3",
 								IPv4: net.ParseIP("100.64.3.2"),
 							},
 						},
@@ -106,7 +103,7 @@ func TestFromYAML(t *testing.T) {
 				Links: []*topology.Link{
 					{
 						Endpoints:     []string{"frr01:eth0", "frr02:eth0"},
-						Name:          "golab-link-1",
+						Name:          "ptp1",
 						RawIPv4Subnet: "100.64.1.0/29",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.1.0"),
@@ -116,7 +113,7 @@ func TestFromYAML(t *testing.T) {
 					},
 					{
 						Endpoints:     []string{"frr01:eth1", "frr03:eth0"},
-						Name:          "golab-link-2",
+						Name:          "ptp2",
 						RawIPv4Subnet: "100.64.2.0/29",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.2.0"),
@@ -126,13 +123,98 @@ func TestFromYAML(t *testing.T) {
 					},
 					{
 						Endpoints:     []string{"frr02:eth1", "frr03:eth1"},
-						Name:          "golab-link-3",
+						Name:          "ptp3",
 						RawIPv4Subnet: "100.64.3.0/29",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.3.0"),
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.3.6"),
+					},
+				},
+			},
+		},
+		{
+			name: "AutoPopulateData",
+			data: `
+                        name: "multihome"
+                        nodes:
+                          router:
+                            image: "quay.io/frrouting/frr:master"
+                          isp1:
+                            image: "quay.io/frrouting/frr:master"
+                          isp2:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["isp1:eth0", "router:eth0"]
+                          - endpoints: ["isp2:eth0", "router:eth1"]
+                        `,
+			want: &topology.Topology{
+				Name: "multihome",
+				AutoIPv4: &net.IPNet{
+					IP:   net.ParseIP("100.64.0.16"),
+					Mask: net.CIDRMask(29, 32),
+				},
+				Nodes: map[string]*topology.Node{
+					"router": {
+						Name:  "router",
+						Image: "quay.io/frrouting/frr:master",
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								IPv4: net.ParseIP("100.64.0.2"),
+							},
+							{
+								Name: "eth1",
+								Link: "golab-link-2",
+								IPv4: net.ParseIP("100.64.0.10"),
+							},
+						},
+					},
+					"isp1": {
+						Name:  "isp1",
+						Image: "quay.io/frrouting/frr:master",
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								IPv4: net.ParseIP("100.64.0.1"),
+							},
+						},
+					},
+					"isp2": {
+						Name:  "isp2",
+						Image: "quay.io/frrouting/frr:master",
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-2",
+								IPv4: net.ParseIP("100.64.0.9"),
+							},
+						},
+					},
+				},
+				Links: []*topology.Link{
+					{
+						Endpoints:     []string{"isp1:eth0", "router:eth0"},
+						Name:          "golab-link-1",
+						RawIPv4Subnet: "",
+						IPv4Subnet: &net.IPNet{
+							IP:   net.ParseIP("100.64.0.0"),
+							Mask: net.CIDRMask(29, 32),
+						},
+						IPv4Gateway: net.ParseIP("100.64.0.6"),
+					},
+					{
+						Endpoints:     []string{"isp2:eth0", "router:eth1"},
+						Name:          "golab-link-2",
+						RawIPv4Subnet: "",
+						IPv4Subnet: &net.IPNet{
+							IP:   net.ParseIP("100.64.0.8"),
+							Mask: net.CIDRMask(29, 32),
+						},
+						IPv4Gateway: net.ParseIP("100.64.0.14"),
 					},
 				},
 			},
@@ -200,6 +282,19 @@ func TestFromYAML_Errors(t *testing.T) {
 			err: topology.ErrInvalidEndpoint,
 		},
 		{
+			name: "InvalidInterface",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:xe-0/0/0"]
+                        `,
+			err: topology.ErrInvalidInterface,
+		},
+		{
 			name: "UnknownNode",
 			data: `
                         nodes:
@@ -222,9 +317,23 @@ func TestFromYAML_Errors(t *testing.T) {
                             image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
-                            ipv4_subnet: "256.0.0.0/29"
+                            ipv4_subnet: 256.0.0.0/29
                         `,
 			err: topology.ErrInvalidCIDR,
+		},
+		{
+			name: "SubnetExhausted",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                            ipv4_subnet: 100.64.0.0/31
+                        `,
+			err: topology.ErrSubnetExhausted,
 		},
 	}
 	for _, tc := range testCases {

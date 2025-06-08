@@ -16,11 +16,5 @@ nodes:
       - "/lib/modules:/lib/modules"
       - "/home/evgeny/multihome/isp2:/etc/frr"
 links:
-  - endpoints: ["router:eth0", "isp1:eth0"]
-    name: "isp1"
-    ipv4_subnet: "100.11.0.0/29"
-    ipv4_gateway: "100.11.0.6"
-  - endpoints: ["router:eth1", "isp2:eth0"]
-    name: "isp2"
-    ipv4_subnet: "100.22.0.0/29"
-    ipv4_gateway: "100.22.0.6"
+  - endpoints: ["isp1:eth0", "router:eth0"]
+  - endpoints: ["isp2:eth0", "router:eth1"]
