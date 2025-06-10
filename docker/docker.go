@@ -50,6 +50,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 				},
 			},
 		},
+		Internal: true, // network is internal to the Docker host.
 	}
 	resp, err := dp.dockerClient.NetworkCreate(ctx, link.Name, opts)
 	if err != nil {
