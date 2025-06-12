@@ -20,6 +20,8 @@ const (
 	autoLinkNamePrefix  = "golab-link-"
 	autoIPv4FirstSubnet = "100.64.0.0/29"
 	autoIPv4PrefixLen   = 29
+	autoIPv6FirstSubnet = "2001:db8::/64"
+	autoIPv6PrefixLen   = 64
 )
 
 var (
@@ -49,6 +51,7 @@ type Interface struct {
 	Name string
 	Link string
 	IPv4 net.IP
+	IPv6 net.IP
 }
 
 // Link represents a link in a virtual network topology.
@@ -58,6 +61,9 @@ type Link struct {
 	RawIPv4Subnet string   `yaml:"ipv4_subnet"`
 	IPv4Subnet    *net.IPNet
 	IPv4Gateway   net.IP
+	RawIPv6Subnet string `yaml:"ipv6_subnet"`
+	IPv6Subnet    *net.IPNet
+	IPv6Gateway   net.IP
 }
 
 // Topology represents a virtual network comprised of nodes and links.
@@ -66,6 +72,7 @@ type Topology struct {
 	Nodes    map[string]*Node `yaml:"nodes"`
 	Links    []*Link          `yaml:"links"`
 	AutoIPv4 *net.IPNet
+	AutoIPv6 *net.IPNet
 }
 
 // populateBinds validates/fixes user provided binds and adds vendor-specific ones.
@@ -178,8 +185,10 @@ func (topo *Topology) populateLinks() error {
 
 // populateIPRanges runs sanity checks and initializes the IP pools for auto-allocation.
 func (topo *Topology) populateIPRanges() error {
-	_, autoIPv4net, _ := net.ParseCIDR(autoIPv4FirstSubnet)
-	topo.AutoIPv4 = autoIPv4net
+	_, autoIPnet, _ := net.ParseCIDR(autoIPv4FirstSubnet)
+	topo.AutoIPv4 = autoIPnet
+	_, autoIPnet, _ = net.ParseCIDR(autoIPv6FirstSubnet)
+	topo.AutoIPv6 = autoIPnet
 	return nil
 }
 

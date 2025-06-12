@@ -41,6 +41,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return nil
 	}
 	// Otherwise, create a new Docker network.
+	enableIPv6 := link.IPv6Subnet != nil
 	opts := network.CreateOptions{
 		IPAM: &network.IPAM{
 			Config: []network.IPAMConfig{
@@ -50,7 +51,8 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 				},
 			},
 		},
-		Internal: true, // network is internal to the Docker host.
+		Internal:   true, // network is internal to the Docker host.
+		EnableIPv6: &enableIPv6,
 	}
 	resp, err := dp.dockerClient.NetworkCreate(ctx, link.Name, opts)
 	if err != nil {
