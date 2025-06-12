@@ -145,9 +145,23 @@ func (topo *Topology) populateLinks() error {
 			}
 			link.IPv4Subnet = ipv4net
 		}
+		if link.RawIPv6Subnet == "" {
+			// allocate next available IPv6 subnet
+			link.IPv6Subnet = topo.AutoIPv6
+			topo.AutoIPv6, _ = cidr.NextSubnet(topo.AutoIPv6, autoIPv6PrefixLen)
+		} else {
+			// validate IP subnet if manually allocated by the user
+			_, ipv6net, err := net.ParseCIDR(link.RawIPv6Subnet)
+			if err != nil {
+				return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv6Subnet)
+			}
+			link.IPv6Subnet = ipv6net
+		}
 		// allocate last usable IP address of the subnet as a gateway
 		_, bcast := cidr.AddressRange(link.IPv4Subnet)
 		link.IPv4Gateway = cidr.Dec(bcast)
+		_, bcast = cidr.AddressRange(link.IPv6Subnet)
+		link.IPv6Gateway = cidr.Dec(bcast)
 		// check that link has at least two endpoints
 		if len(link.Endpoints) < 2 {
 			return fmt.Errorf("%w: %s", ErrTooFewEndpoints, link.Name)
@@ -173,10 +187,15 @@ func (topo *Topology) populateLinks() error {
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
 			}
+			ipv6Addr, err := cidr.Host(link.IPv6Subnet, j+1)
+			if err != nil {
+				return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
+			}
 			node.Interfaces = append(node.Interfaces, &Interface{
 				Name: iface,
 				Link: link.Name,
 				IPv4: ipv4Addr,
+				IPv6: ipv6Addr,
 			})
 		}
 	}

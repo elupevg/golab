@@ -49,6 +49,10 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 					Subnet:  link.IPv4Subnet.String(),
 					Gateway: link.IPv4Gateway.String(),
 				},
+				{
+					Subnet:  link.IPv6Subnet.String(),
+					Gateway: link.IPv6Gateway.String(),
+				},
 			},
 		},
 		Internal:   true, // network is internal to the Docker host.

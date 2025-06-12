@@ -36,12 +36,15 @@ func TestFromYAML(t *testing.T) {
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             name: "ptp1"
                             ipv4_subnet: 100.64.1.0/29
+                            ipv6_subnet: 2001:db8:1::/64
                           - endpoints: ["frr01:eth1", "frr03:eth0"]
                             name: "ptp2"
                             ipv4_subnet: 100.64.2.0/29
+                            ipv6_subnet: 2001:db8:2::/64
                           - endpoints: ["frr02:eth1", "frr03:eth1"]
                             name: "ptp3"
                             ipv4_subnet: 100.64.3.0/29
+                            ipv6_subnet: 2001:db8:3::/64
                         `,
 			want: &topology.Topology{
 				Name: "triangle",
@@ -67,11 +70,13 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "ptp1",
 								IPv4: net.ParseIP("100.64.1.1"),
+								IPv6: net.ParseIP("2001:db8:1::1"),
 							},
 							{
 								Name: "eth1",
 								Link: "ptp2",
 								IPv4: net.ParseIP("100.64.2.1"),
+								IPv6: net.ParseIP("2001:db8:2::1"),
 							},
 						},
 					},
@@ -88,11 +93,13 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "ptp1",
 								IPv4: net.ParseIP("100.64.1.2"),
+								IPv6: net.ParseIP("2001:db8:1::2"),
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
 								IPv4: net.ParseIP("100.64.3.1"),
+								IPv6: net.ParseIP("2001:db8:3::1"),
 							},
 						},
 					},
@@ -109,11 +116,13 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "ptp2",
 								IPv4: net.ParseIP("100.64.2.2"),
+								IPv6: net.ParseIP("2001:db8:2::2"),
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
 								IPv4: net.ParseIP("100.64.3.2"),
+								IPv6: net.ParseIP("2001:db8:3::2"),
 							},
 						},
 					},
@@ -123,31 +132,49 @@ func TestFromYAML(t *testing.T) {
 						Endpoints:     []string{"frr01:eth0", "frr02:eth0"},
 						Name:          "ptp1",
 						RawIPv4Subnet: "100.64.1.0/29",
+						RawIPv6Subnet: "2001:db8:1::/64",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.1.0"),
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.1.6"),
+						IPv6Subnet: &net.IPNet{
+							IP:   net.ParseIP("2001:db8:1::"),
+							Mask: net.CIDRMask(64, 128),
+						},
+						IPv6Gateway: net.ParseIP("2001:db8:1::ffff:ffff:ffff:fffe"),
 					},
 					{
 						Endpoints:     []string{"frr01:eth1", "frr03:eth0"},
 						Name:          "ptp2",
 						RawIPv4Subnet: "100.64.2.0/29",
+						RawIPv6Subnet: "2001:db8:2::/64",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.2.0"),
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.2.6"),
+						IPv6Subnet: &net.IPNet{
+							IP:   net.ParseIP("2001:db8:2::"),
+							Mask: net.CIDRMask(64, 128),
+						},
+						IPv6Gateway: net.ParseIP("2001:db8:2::ffff:ffff:ffff:fffe"),
 					},
 					{
 						Endpoints:     []string{"frr02:eth1", "frr03:eth1"},
 						Name:          "ptp3",
 						RawIPv4Subnet: "100.64.3.0/29",
+						RawIPv6Subnet: "2001:db8:3::/64",
 						IPv4Subnet: &net.IPNet{
 							IP:   net.ParseIP("100.64.3.0"),
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.3.6"),
+						IPv6Subnet: &net.IPNet{
+							IP:   net.ParseIP("2001:db8:3::"),
+							Mask: net.CIDRMask(64, 128),
+						},
+						IPv6Gateway: net.ParseIP("2001:db8:3::ffff:ffff:ffff:fffe"),
 					},
 				},
 			},
@@ -174,7 +201,7 @@ func TestFromYAML(t *testing.T) {
 					Mask: net.CIDRMask(29, 32),
 				},
 				AutoIPv6: &net.IPNet{
-					IP:   net.ParseIP("2001:db8::"),
+					IP:   net.ParseIP("2001:db8:0:2::"),
 					Mask: net.CIDRMask(64, 128),
 				},
 				Nodes: map[string]*topology.Node{
@@ -188,11 +215,13 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "golab-link-1",
 								IPv4: net.ParseIP("100.64.0.2"),
+								IPv6: net.ParseIP("2001:db8::2"),
 							},
 							{
 								Name: "eth1",
 								Link: "golab-link-2",
 								IPv4: net.ParseIP("100.64.0.10"),
+								IPv6: net.ParseIP("2001:db8:0:1::2"),
 							},
 						},
 					},
@@ -206,6 +235,7 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "golab-link-1",
 								IPv4: net.ParseIP("100.64.0.1"),
+								IPv6: net.ParseIP("2001:db8::1"),
 							},
 						},
 					},
@@ -219,6 +249,7 @@ func TestFromYAML(t *testing.T) {
 								Name: "eth0",
 								Link: "golab-link-2",
 								IPv4: net.ParseIP("100.64.0.9"),
+								IPv6: net.ParseIP("2001:db8:0:1::1"),
 							},
 						},
 					},
@@ -233,6 +264,11 @@ func TestFromYAML(t *testing.T) {
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.0.6"),
+						IPv6Subnet: &net.IPNet{
+							IP:   net.ParseIP("2001:db8::"),
+							Mask: net.CIDRMask(64, 128),
+						},
+						IPv6Gateway: net.ParseIP("2001:db8::ffff:ffff:ffff:fffe"),
 					},
 					{
 						Endpoints:     []string{"isp2:eth0", "router:eth1"},
@@ -243,6 +279,11 @@ func TestFromYAML(t *testing.T) {
 							Mask: net.CIDRMask(29, 32),
 						},
 						IPv4Gateway: net.ParseIP("100.64.0.14"),
+						IPv6Subnet: &net.IPNet{
+							IP:   net.ParseIP("2001:db8:0:1::"),
+							Mask: net.CIDRMask(64, 128),
+						},
+						IPv6Gateway: net.ParseIP("2001:db8:0:1:ffff:ffff:ffff:fffe"),
 					},
 				},
 			},
@@ -377,7 +418,21 @@ func TestFromYAML_Errors(t *testing.T) {
 			err: topology.ErrInvalidCIDR,
 		},
 		{
-			name: "SubnetExhausted",
+			name: "InvalidIPv6Subnet",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                            ipv6_subnet: 2001:g::/64
+                        `,
+			err: topology.ErrInvalidCIDR,
+		},
+		{
+			name: "IPv4SubnetExhausted",
 			data: `
                         nodes:
                           frr01:
@@ -387,6 +442,20 @@ func TestFromYAML_Errors(t *testing.T) {
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             ipv4_subnet: 100.64.0.0/31
+                        `,
+			err: topology.ErrSubnetExhausted,
+		},
+		{
+			name: "IPv4SubnetExhausted",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                            ipv6_subnet: 2001:db8::/127
                         `,
 			err: topology.ErrSubnetExhausted,
 		},
