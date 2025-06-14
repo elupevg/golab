@@ -126,6 +126,40 @@ func (topo *Topology) populateNodes() error {
 	return nil
 }
 
+// allocateIPSubnets validates/allocates link IP subnets and addresses.
+func (topo *Topology) allocateIPSubnets(link *Link) error {
+	if link.RawIPv4Subnet == "" {
+		// allocate next available IPv4 subnet
+		link.IPv4Subnet = topo.AutoIPv4
+		topo.AutoIPv4, _ = cidr.NextSubnet(topo.AutoIPv4, autoIPv4PrefixLen)
+	} else {
+		// validate IP subnet if manually allocated by the user
+		_, ipv4net, err := net.ParseCIDR(link.RawIPv4Subnet)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv4Subnet)
+		}
+		link.IPv4Subnet = ipv4net
+	}
+	if link.RawIPv6Subnet == "" {
+		// allocate next available IPv6 subnet
+		link.IPv6Subnet = topo.AutoIPv6
+		topo.AutoIPv6, _ = cidr.NextSubnet(topo.AutoIPv6, autoIPv6PrefixLen)
+	} else {
+		// validate IP subnet if manually allocated by the user
+		_, ipv6net, err := net.ParseCIDR(link.RawIPv6Subnet)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv6Subnet)
+		}
+		link.IPv6Subnet = ipv6net
+	}
+	// allocate last usable IP address of the subnet as a gateway
+	_, bcast := cidr.AddressRange(link.IPv4Subnet)
+	link.IPv4Gateway = cidr.Dec(bcast)
+	_, bcast = cidr.AddressRange(link.IPv6Subnet)
+	link.IPv6Gateway = cidr.Dec(bcast)
+	return nil
+}
+
 // populateLinks runs sanity checks on links and populates empty fields.
 func (topo *Topology) populateLinks() error {
 	for i, link := range topo.Links {
@@ -133,35 +167,9 @@ func (topo *Topology) populateLinks() error {
 		if link.Name == "" {
 			link.Name = autoLinkNamePrefix + strconv.Itoa(i+1)
 		}
-		if link.RawIPv4Subnet == "" {
-			// allocate next available IPv4 subnet
-			link.IPv4Subnet = topo.AutoIPv4
-			topo.AutoIPv4, _ = cidr.NextSubnet(topo.AutoIPv4, autoIPv4PrefixLen)
-		} else {
-			// validate IP subnet if manually allocated by the user
-			_, ipv4net, err := net.ParseCIDR(link.RawIPv4Subnet)
-			if err != nil {
-				return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv4Subnet)
-			}
-			link.IPv4Subnet = ipv4net
+		if err := topo.allocateIPSubnets(link); err != nil {
+			return err
 		}
-		if link.RawIPv6Subnet == "" {
-			// allocate next available IPv6 subnet
-			link.IPv6Subnet = topo.AutoIPv6
-			topo.AutoIPv6, _ = cidr.NextSubnet(topo.AutoIPv6, autoIPv6PrefixLen)
-		} else {
-			// validate IP subnet if manually allocated by the user
-			_, ipv6net, err := net.ParseCIDR(link.RawIPv6Subnet)
-			if err != nil {
-				return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv6Subnet)
-			}
-			link.IPv6Subnet = ipv6net
-		}
-		// allocate last usable IP address of the subnet as a gateway
-		_, bcast := cidr.AddressRange(link.IPv4Subnet)
-		link.IPv4Gateway = cidr.Dec(bcast)
-		_, bcast = cidr.AddressRange(link.IPv6Subnet)
-		link.IPv6Gateway = cidr.Dec(bcast)
 		// check that link has at least two endpoints
 		if len(link.Endpoints) < 2 {
 			return fmt.Errorf("%w: %s", ErrTooFewEndpoints, link.Name)
