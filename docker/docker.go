@@ -41,28 +41,31 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return nil
 	}
 	// Otherwise, create a new Docker network.
-	enableIPv6 := link.IPv6Subnet != nil
+	ipamConfigs := make([]network.IPAMConfig, 0, 2)
+	var enableIPv4, enableIPv6 bool
+	for i, subnet := range link.Subnets {
+		if strings.Contains(subnet.String(), ":") {
+			enableIPv6 = true
+		}
+		if strings.Contains(subnet.String(), ".") {
+			enableIPv4 = true
+		}
+		ipamConfigs = append(ipamConfigs, network.IPAMConfig{
+			Subnet:  subnet.String(),
+			Gateway: link.Gateways[i].String(),
+		})
+	}
 	opts := network.CreateOptions{
-		IPAM: &network.IPAM{
-			Config: []network.IPAMConfig{
-				{
-					Subnet:  link.IPv4Subnet.String(),
-					Gateway: link.IPv4Gateway.String(),
-				},
-				{
-					Subnet:  link.IPv6Subnet.String(),
-					Gateway: link.IPv6Gateway.String(),
-				},
-			},
-		},
+		IPAM:       &network.IPAM{Config: ipamConfigs},
 		Internal:   true, // network is internal to the Docker host.
+		EnableIPv4: &enableIPv4,
 		EnableIPv6: &enableIPv6,
 	}
 	resp, err := dp.dockerClient.NetworkCreate(ctx, link.Name, opts)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[SUCCESS] created Docker network %q: subnet=%s, id=%s\n", link.Name, link.IPv4Subnet, string(resp.ID[:12]))
+	fmt.Printf("[SUCCESS] created Docker network %q: subnets=%v, id=%s\n", link.Name, link.Subnets, string(resp.ID[:12]))
 	return nil
 }
 
@@ -132,9 +135,18 @@ func generateMounts(node topology.Node) []mount.Mount {
 func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
 	endpoints := make(map[string]*network.EndpointSettings, len(node.Interfaces))
 	for _, iface := range node.Interfaces {
+		var ipv4Addr, ipv6Addr string
+		for _, addr := range iface.Addrs {
+			if ip := addr.To4(); ip != nil {
+				ipv4Addr = addr.String()
+			} else {
+				ipv6Addr = addr.String()
+			}
+		}
 		endpoints[iface.Link] = &network.EndpointSettings{
 			IPAMConfig: &network.EndpointIPAMConfig{
-				IPv4Address: iface.IPv4.String(),
+				IPv4Address: ipv4Addr,
+				IPv6Address: ipv6Addr,
 			},
 		}
 	}

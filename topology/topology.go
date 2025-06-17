@@ -16,13 +16,7 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-const (
-	autoLinkNamePrefix  = "golab-link-"
-	autoIPv4FirstSubnet = "100.64.0.0/29"
-	autoIPv4PrefixLen   = 29
-	autoIPv6FirstSubnet = "2001:db8::/64"
-	autoIPv6PrefixLen   = 64
-)
+const autoLinkNamePrefix = "golab-link-"
 
 var (
 	ErrCorruptYAML      = errors.New("cannot parse YAML file")
@@ -37,42 +31,40 @@ var (
 	ErrInvalidBind      = errors.New("invalid bind format")
 )
 
+// Topology represents a virtual network comprised of nodes and links.
+type Topology struct {
+	Name  string           `yaml:"name"`
+	Nodes map[string]*Node `yaml:"nodes"`
+	Links []*Link          `yaml:"links"`
+}
+
 // Node represents a node in a virtual network topology.
 type Node struct {
 	Name       string
 	Image      string   `yaml:"image"`
 	Binds      []string `yaml:"binds"`
-	Interfaces []*Interface
 	Vendor     vendors.Vendor
+	Interfaces []*Interface
 }
 
 // Interface respresents a network node attachment to a link.
 type Interface struct {
-	Name string
-	Link string
-	IPv4 net.IP
-	IPv6 net.IP
+	Name  string
+	Link  string
+	Addrs []net.IP
 }
 
 // Link represents a link in a virtual network topology.
 type Link struct {
-	Endpoints     []string `yaml:"endpoints"`
-	Name          string   `yaml:"name"`
-	RawIPv4Subnet string   `yaml:"ipv4_subnet"`
-	IPv4Subnet    *net.IPNet
-	IPv4Gateway   net.IP
-	RawIPv6Subnet string `yaml:"ipv6_subnet"`
-	IPv6Subnet    *net.IPNet
-	IPv6Gateway   net.IP
+	Name       string   `yaml:"name"`
+	Endpoints  []string `yaml:"endpoints"`
+	RawSubnets []string `yaml:"ip_subnets"`
+	Subnets    []*net.IPNet
+	Gateways   []net.IP
 }
 
-// Topology represents a virtual network comprised of nodes and links.
-type Topology struct {
-	Name     string           `yaml:"name"`
-	Nodes    map[string]*Node `yaml:"nodes"`
-	Links    []*Link          `yaml:"links"`
-	AutoIPv4 *net.IPNet
-	AutoIPv6 *net.IPNet
+func (topo *Topology) populateIPRanges() error {
+	return nil
 }
 
 // populateBinds validates/fixes user provided binds and adds vendor-specific ones.
@@ -128,35 +120,17 @@ func (topo *Topology) populateNodes() error {
 
 // allocateIPSubnets validates/allocates link IP subnets and addresses.
 func (topo *Topology) allocateIPSubnets(link *Link) error {
-	if link.RawIPv4Subnet == "" {
-		// allocate next available IPv4 subnet
-		link.IPv4Subnet = topo.AutoIPv4
-		topo.AutoIPv4, _ = cidr.NextSubnet(topo.AutoIPv4, autoIPv4PrefixLen)
-	} else {
+	for _, rawSubnet := range link.RawSubnets {
 		// validate IP subnet if manually allocated by the user
-		_, ipv4net, err := net.ParseCIDR(link.RawIPv4Subnet)
+		_, ipnet, err := net.ParseCIDR(rawSubnet)
 		if err != nil {
-			return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv4Subnet)
+			return fmt.Errorf("%w: %s", ErrInvalidCIDR, rawSubnet)
 		}
-		link.IPv4Subnet = ipv4net
+		link.Subnets = append(link.Subnets, ipnet)
+		// allocate last usable IP address of the subnet as a gateway
+		_, bcast := cidr.AddressRange(ipnet)
+		link.Gateways = append(link.Gateways, cidr.Dec(bcast))
 	}
-	if link.RawIPv6Subnet == "" {
-		// allocate next available IPv6 subnet
-		link.IPv6Subnet = topo.AutoIPv6
-		topo.AutoIPv6, _ = cidr.NextSubnet(topo.AutoIPv6, autoIPv6PrefixLen)
-	} else {
-		// validate IP subnet if manually allocated by the user
-		_, ipv6net, err := net.ParseCIDR(link.RawIPv6Subnet)
-		if err != nil {
-			return fmt.Errorf("%w: %s", ErrInvalidCIDR, link.RawIPv6Subnet)
-		}
-		link.IPv6Subnet = ipv6net
-	}
-	// allocate last usable IP address of the subnet as a gateway
-	_, bcast := cidr.AddressRange(link.IPv4Subnet)
-	link.IPv4Gateway = cidr.Dec(bcast)
-	_, bcast = cidr.AddressRange(link.IPv6Subnet)
-	link.IPv6Gateway = cidr.Dec(bcast)
 	return nil
 }
 
@@ -190,41 +164,28 @@ func (topo *Topology) populateLinks() error {
 			if !strings.HasPrefix(iface, "eth") {
 				return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
 			}
-			// allocate IP addresses
-			ipv4Addr, err := cidr.Host(link.IPv4Subnet, j+1)
-			if err != nil {
-				return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
-			}
-			ipv6Addr, err := cidr.Host(link.IPv6Subnet, j+1)
-			if err != nil {
-				return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
+			addrs := make([]net.IP, 0, 2)
+			for _, subnet := range link.Subnets {
+				// allocate IP addresses
+				addr, err := cidr.Host(subnet, j+1)
+				if err != nil {
+					return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
+				}
+				addrs = append(addrs, addr)
 			}
 			node.Interfaces = append(node.Interfaces, &Interface{
-				Name: iface,
-				Link: link.Name,
-				IPv4: ipv4Addr,
-				IPv6: ipv6Addr,
+				Name:  iface,
+				Link:  link.Name,
+				Addrs: addrs,
 			})
 		}
 	}
 	return nil
 }
 
-// populateIPRanges runs sanity checks and initializes the IP pools for auto-allocation.
-func (topo *Topology) populateIPRanges() error {
-	_, autoIPnet, _ := net.ParseCIDR(autoIPv4FirstSubnet)
-	topo.AutoIPv4 = autoIPnet
-	_, autoIPnet, _ = net.ParseCIDR(autoIPv6FirstSubnet)
-	topo.AutoIPv6 = autoIPnet
-	return nil
-}
-
-// validator represents a generic validation check for a specific part of the topology.
-type validator func() error
-
 // populate runs sanity checks on the topology and populates empty fields.
 func (topo *Topology) populate() error {
-	validators := []validator{
+	validators := []func() error{
 		topo.populateNodes,
 		topo.populateIPRanges,
 		topo.populateLinks,

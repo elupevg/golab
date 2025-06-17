@@ -18,11 +18,20 @@ func TestLinkCreateRemove(t *testing.T) {
 	dp := docker.New(fakeDockerClient)
 	link := topology.Link{
 		Name: "golab-link-1",
-		IPv4Subnet: &net.IPNet{
-			IP:   net.ParseIP("100.11.0.0"),
-			Mask: net.CIDRMask(29, 32),
+		Subnets: []*net.IPNet{
+			{
+				IP:   net.ParseIP("100.11.0.0"),
+				Mask: net.CIDRMask(29, 32),
+			},
+			{
+				IP:   net.ParseIP("2001:db8:11::"),
+				Mask: net.CIDRMask(64, 128),
+			},
 		},
-		IPv4Gateway: net.ParseIP("100.11.0.6"),
+		Gateways: []net.IP{
+			net.ParseIP("100.11.0.6"),
+			net.ParseIP("2001:db8:11::ffff:ffff:ffff:fffe"),
+		},
 	}
 	// link creation
 	err := dp.LinkCreate(ctx, link)
@@ -85,10 +94,13 @@ func TestLinkCreateError(t *testing.T) {
 	fakeDockerClient := fakeclient.New()
 	dp := docker.New(fakeDockerClient)
 	link := topology.Link{
-		IPv4Subnet: &net.IPNet{
-			IP:   net.ParseIP("100.11.0.0"),
-			Mask: net.CIDRMask(29, 32),
+		Subnets: []*net.IPNet{
+			{
+				IP:   net.ParseIP("100.11.0.0"),
+				Mask: net.CIDRMask(29, 32),
+			},
 		},
+		Gateways: []net.IP{net.ParseIP("100.11.0.6")},
 	}
 	// network list error
 	wantErr := errors.New("failed to list networks")
@@ -114,10 +126,13 @@ func TestLinkRemoveErrors(t *testing.T) {
 	dp := docker.New(fakeDockerClient)
 	link := topology.Link{
 		Name: "golab-link-1",
-		IPv4Subnet: &net.IPNet{
-			IP:   net.ParseIP("100.11.0.0"),
-			Mask: net.CIDRMask(29, 32),
+		Subnets: []*net.IPNet{
+			{
+				IP:   net.ParseIP("100.11.0.0"),
+				Mask: net.CIDRMask(29, 32),
+			},
 		},
+		Gateways: []net.IP{net.ParseIP("100.11.0.6")},
 	}
 	// create test network
 	err := dp.LinkCreate(ctx, link)
@@ -154,7 +169,10 @@ func TestNodeCreateRemove(t *testing.T) {
 			{
 				Name: "eth0",
 				Link: "golab-link-1",
-				IPv4: net.ParseIP("100.64.0.1"),
+				Addrs: []net.IP{
+					net.ParseIP("100.64.0.1"),
+					net.ParseIP("2001:db8:64::1"),
+				},
 			},
 		},
 	}
