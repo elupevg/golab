@@ -29,13 +29,21 @@ var (
 	ErrSubnetExhausted  = errors.New("cannot allocate IP address")
 	ErrMissingImage     = errors.New("node is missing image specification")
 	ErrInvalidBind      = errors.New("invalid bind format")
+	ErrMissingSubnets   = errors.New("no subnets defined for a link")
 )
 
 // Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
-	Name  string           `yaml:"name"`
-	Nodes map[string]*Node `yaml:"nodes"`
-	Links []*Link          `yaml:"links"`
+	Name        string           `yaml:"name"`
+	Nodes       map[string]*Node `yaml:"nodes"`
+	Links       []*Link          `yaml:"links"`
+	IPStartFrom *IPStartFrom     `yaml:"ip_start_from"`
+}
+
+// IPStartFrom represents a collection of initial subnets for auto-allocation.
+type IPStartFrom struct {
+	RawLinks     []string `yaml:"links"`
+	RawLoopbacks []string `yaml:"loopbacks"`
 }
 
 // Node represents a node in a virtual network topology.
@@ -61,10 +69,6 @@ type Link struct {
 	RawSubnets []string `yaml:"ip_subnets"`
 	Subnets    []*net.IPNet
 	Gateways   []net.IP
-}
-
-func (topo *Topology) populateIPRanges() error {
-	return nil
 }
 
 // populateBinds validates/fixes user provided binds and adds vendor-specific ones.
@@ -118,8 +122,33 @@ func (topo *Topology) populateNodes() error {
 	return nil
 }
 
+// autoSubnets calculates new set of subnets for the next link.
+func (topo *Topology) autoSubnets() error {
+	newSubnets := make([]string, 0, len(topo.IPStartFrom.RawLinks))
+	for _, subnet := range topo.IPStartFrom.RawLinks {
+		_, ipnet, err := net.ParseCIDR(subnet)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidCIDR, subnet)
+		}
+		prefixLen, _ := ipnet.Mask.Size()
+		newIPNet, _ := cidr.NextSubnet(ipnet, prefixLen)
+		newSubnets = append(newSubnets, newIPNet.String())
+	}
+	topo.IPStartFrom.RawLinks = newSubnets
+	return nil
+}
+
 // allocateIPSubnets validates/allocates link IP subnets and addresses.
 func (topo *Topology) allocateIPSubnets(link *Link) error {
+	if link.RawSubnets == nil {
+		if topo.IPStartFrom == nil || topo.IPStartFrom.RawLinks == nil {
+			return fmt.Errorf("%w: %q", ErrMissingSubnets, link.Name)
+		}
+		link.RawSubnets = topo.IPStartFrom.RawLinks
+		if err := topo.autoSubnets(); err != nil {
+			return err
+		}
+	}
 	for _, rawSubnet := range link.RawSubnets {
 		// validate IP subnet if manually allocated by the user
 		_, ipnet, err := net.ParseCIDR(rawSubnet)
@@ -187,7 +216,6 @@ func (topo *Topology) populateLinks() error {
 func (topo *Topology) populate() error {
 	validators := []func() error{
 		topo.populateNodes,
-		topo.populateIPRanges,
 		topo.populateLinks,
 	}
 	for _, validator := range validators {

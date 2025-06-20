@@ -1,4 +1,6 @@
 name: "multihome"
+ip_start_from:
+  links: ["100.64.0.0/29"]
 nodes:
   router:
     image: "quay.io/frrouting/frr:master"

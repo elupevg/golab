@@ -1,4 +1,6 @@
 name: "triangle"
+ip_start_from:
+  links: ["100.64.1.0/29"]
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
@@ -11,8 +13,5 @@ nodes:
     binds: ["frr03:/etc/frr"]
 links:
   - endpoints: ["frr01:eth0", "frr02:eth0"]
-    ipv4_subnet: "100.11.0.0/29"
   - endpoints: ["frr01:eth1", "frr03:eth0"]
-    ipv4_subnet: "100.22.0.0/29"
   - endpoints: ["frr02:eth1", "frr03:eth1"]
-    ipv4_subnet: "100.33.0.0/29"

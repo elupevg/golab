@@ -189,117 +189,133 @@ func TestFromYAML(t *testing.T) {
 				},
 			},
 		},
-		/*
-					{
-						name: "AutoPopulateData",
-						data: `
-			                        name: "multihome"
-			                        nodes:
-			                          router:
-			                            image: "quay.io/frrouting/frr:master"
-			                          isp1:
-			                            image: "quay.io/frrouting/frr:master"
-			                          isp2:
-			                            image: "quay.io/frrouting/frr:master"
-			                        links:
-			                          - endpoints: ["isp1:eth0", "router:eth0"]
-			                          - endpoints: ["isp2:eth0", "router:eth1"]
-			                        `,
-						want: &topology.Topology{
-							Name: "multihome",
-							AutoIPv4: &net.IPNet{
-								IP:   net.ParseIP("100.64.0.16"),
-								Mask: net.CIDRMask(29, 32),
-							},
-							AutoIPv6: &net.IPNet{
-								IP:   net.ParseIP("2001:db8:0:2::"),
-								Mask: net.CIDRMask(64, 128),
-							},
-							Nodes: map[string]*topology.Node{
-								"router": {
-									Name:   "router",
-									Vendor: vendors.FRR,
-									Image:  "quay.io/frrouting/frr:master",
-									Binds:  []string{"/lib/modules:/lib/modules"},
-									Interfaces: []*topology.Interface{
-										{
-											Name: "eth0",
-											Link: "golab-link-1",
-											IPv4: net.ParseIP("100.64.0.2"),
-											IPv6: net.ParseIP("2001:db8::2"),
-										},
-										{
-											Name: "eth1",
-											Link: "golab-link-2",
-											IPv4: net.ParseIP("100.64.0.10"),
-											IPv6: net.ParseIP("2001:db8:0:1::2"),
-										},
-									},
-								},
-								"isp1": {
-									Name:   "isp1",
-									Vendor: vendors.FRR,
-									Image:  "quay.io/frrouting/frr:master",
-									Binds:  []string{"/lib/modules:/lib/modules"},
-									Interfaces: []*topology.Interface{
-										{
-											Name: "eth0",
-											Link: "golab-link-1",
-											IPv4: net.ParseIP("100.64.0.1"),
-											IPv6: net.ParseIP("2001:db8::1"),
-										},
-									},
-								},
-								"isp2": {
-									Name:   "isp2",
-									Vendor: vendors.FRR,
-									Image:  "quay.io/frrouting/frr:master",
-									Binds:  []string{"/lib/modules:/lib/modules"},
-									Interfaces: []*topology.Interface{
-										{
-											Name: "eth0",
-											Link: "golab-link-2",
-											IPv4: net.ParseIP("100.64.0.9"),
-											IPv6: net.ParseIP("2001:db8:0:1::1"),
-										},
-									},
+		{
+			name: "AutoPopulateData",
+			data: `
+                        name: "multihome"
+                        ip_start_from:
+                           links: ["100.64.0.0/29", "2001:db8::/64"]
+                           loopbacks: ["192.168.0.1/32", "2001:db8:168::/128"]
+                        nodes:
+                          router:
+                            image: "quay.io/frrouting/frr:master"
+                          isp1:
+                            image: "quay.io/frrouting/frr:master"
+                          isp2:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["isp1:eth0", "router:eth0"]
+                          - endpoints: ["isp2:eth0", "router:eth1"]
+                        `,
+			want: &topology.Topology{
+				Name: "multihome",
+				IPStartFrom: &topology.IPStartFrom{
+					RawLinks: []string{"100.64.0.16/29", "2001:db8:0:2::/64"},
+					RawLoopbacks: []string{
+						"192.168.0.1/32",
+						"2001:db8:168::/128",
+					},
+				},
+				Nodes: map[string]*topology.Node{
+					"router": {
+						Name:   "router",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								Addrs: []net.IP{
+									net.ParseIP("100.64.0.2"),
+									net.ParseIP("2001:db8::2"),
 								},
 							},
-							Links: []*topology.Link{
-								{
-									Endpoints:     []string{"isp1:eth0", "router:eth0"},
-									Name:          "golab-link-1",
-									RawIPv4Subnet: "",
-									IPv4Subnet: &net.IPNet{
-										IP:   net.ParseIP("100.64.0.0"),
-										Mask: net.CIDRMask(29, 32),
-									},
-									IPv4Gateway: net.ParseIP("100.64.0.6"),
-									IPv6Subnet: &net.IPNet{
-										IP:   net.ParseIP("2001:db8::"),
-										Mask: net.CIDRMask(64, 128),
-									},
-									IPv6Gateway: net.ParseIP("2001:db8::ffff:ffff:ffff:fffe"),
-								},
-								{
-									Endpoints:     []string{"isp2:eth0", "router:eth1"},
-									Name:          "golab-link-2",
-									RawIPv4Subnet: "",
-									IPv4Subnet: &net.IPNet{
-										IP:   net.ParseIP("100.64.0.8"),
-										Mask: net.CIDRMask(29, 32),
-									},
-									IPv4Gateway: net.ParseIP("100.64.0.14"),
-									IPv6Subnet: &net.IPNet{
-										IP:   net.ParseIP("2001:db8:0:1::"),
-										Mask: net.CIDRMask(64, 128),
-									},
-									IPv6Gateway: net.ParseIP("2001:db8:0:1:ffff:ffff:ffff:fffe"),
+							{
+								Name: "eth1",
+								Link: "golab-link-2",
+								Addrs: []net.IP{
+									net.ParseIP("100.64.0.10"),
+									net.ParseIP("2001:db8:0:1::2"),
 								},
 							},
 						},
 					},
-		*/
+					"isp1": {
+						Name:   "isp1",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								Addrs: []net.IP{
+									net.ParseIP("100.64.0.1"),
+									net.ParseIP("2001:db8::1"),
+								},
+							},
+						},
+					},
+					"isp2": {
+						Name:   "isp2",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "eth0",
+								Link: "golab-link-2",
+								Addrs: []net.IP{
+									net.ParseIP("100.64.0.9"),
+									net.ParseIP("2001:db8:0:1::1"),
+								},
+							},
+						},
+					},
+				},
+				Links: []*topology.Link{
+					{
+						Endpoints:  []string{"isp1:eth0", "router:eth0"},
+						Name:       "golab-link-1",
+						RawSubnets: []string{"100.64.0.0/29", "2001:db8::/64"},
+						Subnets: []*net.IPNet{
+							{
+								IP:   net.ParseIP("100.64.0.0"),
+								Mask: net.CIDRMask(29, 32),
+							},
+							{
+								IP:   net.ParseIP("2001:db8::"),
+								Mask: net.CIDRMask(64, 128),
+							},
+						},
+						Gateways: []net.IP{
+							net.ParseIP("100.64.0.6"),
+							net.ParseIP("2001:db8::ffff:ffff:ffff:fffe"),
+						},
+					},
+					{
+						Endpoints:  []string{"isp2:eth0", "router:eth1"},
+						Name:       "golab-link-2",
+						RawSubnets: []string{"100.64.0.8/29", "2001:db8:0:1::/64"},
+						Subnets: []*net.IPNet{
+							{
+								IP:   net.ParseIP("100.64.0.8"),
+								Mask: net.CIDRMask(29, 32),
+							},
+							{
+								IP:   net.ParseIP("2001:db8:0:1::"),
+								Mask: net.CIDRMask(64, 128),
+							},
+						},
+						Gateways: []net.IP{
+							net.ParseIP("100.64.0.14"),
+							net.ParseIP("2001:db8:0:1:ffff:ffff:ffff:fffe"),
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -343,6 +359,8 @@ func TestFromYAML_Errors(t *testing.T) {
 		{
 			name: "LinkWithOneEndpoint",
 			data: `
+                        ip_start_from:
+                           links: ["100.64.0.0/29"]
                         nodes:
                           frr01:
                             image: "quay.io/frrouting/frr:master"
@@ -379,6 +397,8 @@ func TestFromYAML_Errors(t *testing.T) {
 		{
 			name: "InvalidEndpoint",
 			data: `
+                        ip_start_from:
+                           links: ["100.64.0.0/29"]
                         nodes:
                           frr11:
                             image: "quay.io/frrouting/frr:master"
@@ -392,6 +412,8 @@ func TestFromYAML_Errors(t *testing.T) {
 		{
 			name: "InvalidInterface",
 			data: `
+                        ip_start_from:
+                           links: ["100.64.0.0/29"]
                         nodes:
                           frr01:
                             image: "quay.io/frrouting/frr:master"
@@ -405,6 +427,8 @@ func TestFromYAML_Errors(t *testing.T) {
 		{
 			name: "UnknownNode",
 			data: `
+                        ip_start_from:
+                           links: ["100.64.0.0/29"]
                         nodes:
                           frr01:
                             image: "quay.io/frrouting/frr:master"
@@ -490,6 +514,34 @@ func TestFromYAML_Errors(t *testing.T) {
                             binds: ["incorrect"]
                         `,
 			err: topology.ErrInvalidBind,
+		},
+		{
+			name: "NoSubnetsDefined",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrMissingSubnets,
+		},
+		{
+			name: "InvalidAutoSubnet",
+			data: `
+                        ip_start_from:
+                           links: ["256.256.0.0/29"]
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrInvalidCIDR,
 		},
 	}
 	for _, tc := range testCases {
