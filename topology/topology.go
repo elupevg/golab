@@ -34,10 +34,11 @@ var (
 
 // Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
-	Name        string           `yaml:"name"`
-	Nodes       map[string]*Node `yaml:"nodes"`
-	Links       []*Link          `yaml:"links"`
-	IPStartFrom *IPStartFrom     `yaml:"ip_start_from"`
+	Name            string           `yaml:"name"`
+	Nodes           map[string]*Node `yaml:"nodes"`
+	Links           []*Link          `yaml:"links"`
+	IPStartFrom     *IPStartFrom     `yaml:"ip_start_from"`
+	GenerateConfigs bool             `yaml:"generate_configs"`
 }
 
 // IPStartFrom represents a collection of initial subnets for auto-allocation.
@@ -57,9 +58,10 @@ type Node struct {
 
 // Interface respresents a network node attachment to a link.
 type Interface struct {
-	Name  string
-	Link  string
-	Addrs []net.IP
+	Name string
+	Link string
+	IPv4 string
+	IPv6 string
 }
 
 // Link represents a link in a virtual network topology.
@@ -193,19 +195,25 @@ func (topo *Topology) populateLinks() error {
 			if !strings.HasPrefix(iface, "eth") {
 				return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
 			}
-			addrs := make([]net.IP, 0, 2)
+			var ipv4Addr, ipv6Addr string
 			for _, subnet := range link.Subnets {
 				// allocate IP addresses
 				addr, err := cidr.Host(subnet, j+1)
 				if err != nil {
 					return fmt.Errorf("%w: %v", ErrSubnetExhausted, err)
 				}
-				addrs = append(addrs, addr)
+				pl, _ := subnet.Mask.Size()
+				if ip := addr.To4(); ip != nil {
+					ipv4Addr = addr.String() + "/" + strconv.Itoa(pl)
+				} else {
+					ipv6Addr = addr.String() + "/" + strconv.Itoa(pl)
+				}
 			}
 			node.Interfaces = append(node.Interfaces, &Interface{
-				Name:  iface,
-				Link:  link.Name,
-				Addrs: addrs,
+				Name: iface,
+				Link: link.Name,
+				IPv4: ipv4Addr,
+				IPv6: ipv6Addr,
 			})
 		}
 	}

@@ -169,10 +169,8 @@ func TestNodeCreateRemove(t *testing.T) {
 			{
 				Name: "eth0",
 				Link: "golab-link-1",
-				Addrs: []net.IP{
-					net.ParseIP("100.64.0.1"),
-					net.ParseIP("2001:db8:64::1"),
-				},
+				IPv4: "100.64.0.1/29",
+				IPv6: "2001:db8:64::1/64",
 			},
 		},
 	}

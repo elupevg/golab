@@ -1,0 +1,11 @@
+frr defaults traditional
+hostname {{.Name}}
+service integrated-vtysh-config
+!
+{{ range .Interfaces -}}
+interface {{.Name}}
+{{ if .IPv4 }} ip address {{.IPv4}}{{ end }}
+{{ if .IPv6 }} ipv6 address {{.IPv6}}{{- end }}
+exit
+!
+{{ end -}}

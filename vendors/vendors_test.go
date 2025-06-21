@@ -67,3 +67,68 @@ func TestExtraBinds(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigFiles(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name   string
+		vendor vendors.Vendor
+		want   []string
+	}{
+		{
+			name:   "FRRouting",
+			vendor: vendors.FRR,
+			want: []string{
+				"/etc/frr/daemons",
+				"/etc/frr/vtysh.conf",
+				"/etc/frr/frr.conf",
+			},
+		},
+		{
+			name:   "Unknown",
+			vendor: vendors.UNKNOWN,
+			want:   []string{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := vendors.ConfigFiles(tc.vendor)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestString(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name   string
+		vendor vendors.Vendor
+		want   string
+	}{
+		{
+			name:   "FRRouting",
+			vendor: vendors.FRR,
+			want:   "frr",
+		},
+		{
+			name:   "Arista",
+			vendor: vendors.ARISTA,
+			want:   "arista",
+		},
+		{
+			name:   "Unknown",
+			vendor: vendors.UNKNOWN,
+			want:   "unknown",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.vendor.String()
+			if tc.want != got {
+				t.Errorf("want %q, got %q", tc.want, got)
+			}
+		})
+	}
+}

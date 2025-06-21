@@ -12,9 +12,23 @@ const (
 	ARISTA
 )
 
+// String returns a string representation of the vendor name.
+func (v Vendor) String() string {
+	return []string{"unknown", "frr", "arista"}[int(v)]
+}
+
 // bindsByVendor stores collections of mandatory binds for Docker by vendor.
 var bindsByVendor = map[Vendor][]string{
 	FRR: {"/lib/modules:/lib/modules"},
+}
+
+// configFilesByVendor stores collections of mandatory configuration files by vendor.
+var configFilesByVendor = map[Vendor][]string{
+	FRR: {
+		"/etc/frr/daemons",
+		"/etc/frr/vtysh.conf",
+		"/etc/frr/frr.conf",
+	},
 }
 
 // DetectByImage attempts to detect a node vendor based on the container image name.
@@ -35,4 +49,13 @@ func ExtraBinds(v Vendor) []string {
 		return []string{}
 	}
 	return binds
+}
+
+// ConfigFiles returns mandatory configuration file paths for the specific vendor.
+func ConfigFiles(v Vendor) []string {
+	files, ok := configFilesByVendor[v]
+	if !ok {
+		return []string{}
+	}
+	return files
 }

@@ -58,18 +58,14 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "ptp1",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.1.1"),
-									net.ParseIP("2001:db8:1::1"),
-								},
+								IPv4: "100.64.1.1/29",
+								IPv6: "2001:db8:1::1/64",
 							},
 							{
 								Name: "eth1",
 								Link: "ptp2",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.2.1"),
-									net.ParseIP("2001:db8:2::1"),
-								},
+								IPv4: "100.64.2.1/29",
+								IPv6: "2001:db8:2::1/64",
 							},
 						},
 					},
@@ -85,18 +81,14 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "ptp1",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.1.2"),
-									net.ParseIP("2001:db8:1::2"),
-								},
+								IPv4: "100.64.1.2/29",
+								IPv6: "2001:db8:1::2/64",
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.3.1"),
-									net.ParseIP("2001:db8:3::1"),
-								},
+								IPv4: "100.64.3.1/29",
+								IPv6: "2001:db8:3::1/64",
 							},
 						},
 					},
@@ -112,18 +104,14 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "ptp2",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.2.2"),
-									net.ParseIP("2001:db8:2::2"),
-								},
+								IPv4: "100.64.2.2/29",
+								IPv6: "2001:db8:2::2/64",
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.3.2"),
-									net.ParseIP("2001:db8:3::2"),
-								},
+								IPv4: "100.64.3.2/29",
+								IPv6: "2001:db8:3::2/64",
 							},
 						},
 					},
@@ -226,18 +214,14 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "golab-link-1",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.0.2"),
-									net.ParseIP("2001:db8::2"),
-								},
+								IPv4: "100.64.0.2/29",
+								IPv6: "2001:db8::2/64",
 							},
 							{
 								Name: "eth1",
 								Link: "golab-link-2",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.0.10"),
-									net.ParseIP("2001:db8:0:1::2"),
-								},
+								IPv4: "100.64.0.10/29",
+								IPv6: "2001:db8:0:1::2/64",
 							},
 						},
 					},
@@ -250,10 +234,8 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "golab-link-1",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.0.1"),
-									net.ParseIP("2001:db8::1"),
-								},
+								IPv4: "100.64.0.1/29",
+								IPv6: "2001:db8::1/64",
 							},
 						},
 					},
@@ -266,10 +248,8 @@ func TestFromYAML(t *testing.T) {
 							{
 								Name: "eth0",
 								Link: "golab-link-2",
-								Addrs: []net.IP{
-									net.ParseIP("100.64.0.9"),
-									net.ParseIP("2001:db8:0:1::1"),
-								},
+								IPv4: "100.64.0.9/29",
+								IPv6: "2001:db8:0:1::1/64",
 							},
 						},
 					},

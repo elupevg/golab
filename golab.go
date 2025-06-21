@@ -3,7 +3,9 @@ package golab
 
 import (
 	"context"
+	"os"
 
+	"github.com/elupevg/golab/configen"
 	"github.com/elupevg/golab/topology"
 )
 
@@ -23,6 +25,12 @@ func Build(ctx context.Context, data []byte, vp VirtProvider) error {
 	topo, err := topology.FromYAML(data)
 	if err != nil {
 		return err
+	}
+	if topo.GenerateConfigs {
+		err := configen.GenerateAndDump(topo, os.Getenv("PWD"))
+		if err != nil {
+			return err
+		}
 	}
 	for _, link := range topo.Links {
 		err := vp.LinkCreate(ctx, *link)
