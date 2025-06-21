@@ -1,6 +1,8 @@
 name: "triangle"
 ip_start_from:
-  links: ["100.64.1.0/29"]
+  links:
+    - 100.64.1.0/24
+    - 2001:db8:64:1::/64
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
