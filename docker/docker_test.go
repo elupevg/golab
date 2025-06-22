@@ -3,11 +3,13 @@ package docker_test
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"testing"
 
 	"github.com/elupevg/golab/docker"
 	"github.com/elupevg/golab/docker/fakeclient"
+	"github.com/elupevg/golab/logger"
 	"github.com/elupevg/golab/topology"
 )
 
@@ -15,7 +17,7 @@ func TestLinkCreateRemove(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
 		Name: "golab-link-1",
 		Subnets: []*net.IPNet{
@@ -79,7 +81,7 @@ func TestLinkExistsError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	wantErr := errors.New("failed to list networks")
 	fakeDockerClient.NetworkListErr = wantErr
 	_, err := dp.LinkExists(ctx, topology.Link{Name: "golab-link-1"})
@@ -92,7 +94,7 @@ func TestLinkCreateError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
 		Subnets: []*net.IPNet{
 			{
@@ -123,7 +125,7 @@ func TestLinkRemoveErrors(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
 		Name: "golab-link-1",
 		Subnets: []*net.IPNet{
@@ -160,7 +162,7 @@ func TestNodeCreateRemove(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	node := topology.Node{
 		Name:  "frr01",
 		Image: "quay.io/frrouting/frr:master",
@@ -219,7 +221,7 @@ func TestNodeCreateRemove(t *testing.T) {
 func TestNodeExistsError(t *testing.T) {
 	t.Parallel()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	wantErr := errors.New("failed to list containers")
 	fakeDockerClient.ContainerListErr = wantErr
 	_, err := dp.NodeExists(context.Background(), topology.Node{Name: "frr01"})
@@ -232,7 +234,7 @@ func TestNodeCreateError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	// container list error
 	wantErr := errors.New("failed to list containers")
 	fakeDockerClient.ContainerListErr = wantErr
@@ -262,7 +264,7 @@ func TestNodeRemoveError(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	fakeDockerClient := fakeclient.New()
-	dp := docker.New(fakeDockerClient)
+	dp := docker.New(fakeDockerClient, logger.New(io.Discard, io.Discard))
 	// create test container
 	err := dp.NodeCreate(ctx, topology.Node{Name: "frr01"})
 	if err != nil {

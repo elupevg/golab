@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/elupevg/golab/logger"
 	"github.com/elupevg/golab/topology"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -22,11 +23,15 @@ import (
 // DockerProvider stores cached Docker client.
 type DockerProvider struct {
 	dockerClient client.APIClient
+	log          *logger.Logger
 }
 
 // New returns an instance of a DockerProvider.
-func New(dockerClient client.APIClient) *DockerProvider {
-	return &DockerProvider{dockerClient: dockerClient}
+func New(dockerClient client.APIClient, l *logger.Logger) *DockerProvider {
+	return &DockerProvider{
+		dockerClient: dockerClient,
+		log:          l,
+	}
 }
 
 // LinkCreate translates a topology.Link entity into a Docker bridge network and creates it.
@@ -37,7 +42,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if exists {
-		fmt.Printf("[SKIPPED] Docker network %q already exists\n", link.Name)
+		dp.log.Skipped(fmt.Sprintf("Docker network %q already exists", link.Name))
 		return nil
 	}
 	// Otherwise, create a new Docker network.
@@ -65,7 +70,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[SUCCESS] created Docker network %q: subnets=%v, id=%s\n", link.Name, link.Subnets, string(resp.ID[:12]))
+	dp.log.Success(fmt.Sprintf("created Docker network %q: subnets=%v, id=%s", link.Name, link.Subnets, string(resp.ID[:12])))
 	return nil
 }
 
@@ -91,7 +96,7 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if !exists {
-		fmt.Printf("[SKIPPED] Docker network %q already removed\n", link.Name)
+		dp.log.Skipped(fmt.Sprintf("Docker network %q already removed", link.Name))
 		return nil
 	}
 	// Otherwise, remove a Docker network.
@@ -99,7 +104,7 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[SUCCESS] removed Docker network %q\n", link.Name)
+	dp.log.Success(fmt.Sprintf("removed Docker network %q", link.Name))
 	return nil
 }
 
@@ -155,7 +160,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if exists {
-		fmt.Printf("[SKIPPED] Docker container %q already exists\n", node.Name)
+		dp.log.Skipped(fmt.Sprintf("Docker container %q already exists", node.Name))
 		return nil
 	}
 	// Generate new container configuration
@@ -182,7 +187,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[SUCCESS] started Docker container %q: ID=%s\n", node.Name, string(resp.ID[:12]))
+	dp.log.Success(fmt.Sprintf("started Docker container %q: ID=%s", node.Name, string(resp.ID[:12])))
 	return nil
 }
 
@@ -193,7 +198,7 @@ func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if !exists {
-		fmt.Printf("[SKIPPED] Docker container %q already removed\n", node.Name)
+		dp.log.Skipped(fmt.Sprintf("Docker container %q already removed", node.Name))
 		return err
 	}
 	// Remove container
@@ -201,6 +206,6 @@ func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) er
 	if err != nil {
 		return err
 	}
-	fmt.Printf("[SUCCESS] removed Docker container %q\n", node.Name)
+	dp.log.Success(fmt.Sprintf("removed Docker container %q", node.Name))
 	return nil
 }
