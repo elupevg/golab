@@ -16,10 +16,11 @@ import (
 const usage = "Usage:\n  golab build\n  golab wreck"
 
 func main() {
+	log := logger.New(os.Stdout, os.Stderr)
 	if len(os.Args) != 2 {
 		fmt.Println(usage)
+		return
 	}
-	log := logger.New(os.Stdout, os.Stderr)
 	var cmd golab.Command
 	switch os.Args[1] {
 	case "build":
@@ -36,10 +37,10 @@ func main() {
 		os.Exit(1)
 	}
 	if len(yamlFiles) != 1 {
-		log.Error(fmt.Errorf("expected one topology YAML file but found %d", len(yamlFiles)))
+		log.Error(fmt.Errorf("expected 1 topology YAML file but found %d", len(yamlFiles)))
 		os.Exit(1)
 	}
-	log.Success(fmt.Sprintf("found topology file %q", yamlFiles[0]))
+	log.Success(fmt.Sprintf("discovered topology file %s", yamlFiles[0]))
 	data, err := os.ReadFile(yamlFiles[0])
 	if err != nil {
 		log.Error(err)

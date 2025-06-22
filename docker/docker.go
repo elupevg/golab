@@ -27,10 +27,10 @@ type DockerProvider struct {
 }
 
 // New returns an instance of a DockerProvider.
-func New(dockerClient client.APIClient, l *logger.Logger) *DockerProvider {
+func New(dockerClient client.APIClient, log *logger.Logger) *DockerProvider {
 	return &DockerProvider{
 		dockerClient: dockerClient,
-		log:          l,
+		log:          log,
 	}
 }
 
@@ -42,7 +42,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if exists {
-		dp.log.Skipped(fmt.Sprintf("Docker network %q already exists", link.Name))
+		dp.log.Skipped(fmt.Sprintf("docker network name=%s already exists", link.Name))
 		return nil
 	}
 	// Otherwise, create a new Docker network.
@@ -70,7 +70,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	if err != nil {
 		return err
 	}
-	dp.log.Success(fmt.Sprintf("created Docker network %q: subnets=%v, id=%s", link.Name, link.Subnets, string(resp.ID[:12])))
+	dp.log.Success(fmt.Sprintf("created docker network name=%s: subnets=%v, id=%s", link.Name, link.Subnets, string(resp.ID[:12])))
 	return nil
 }
 
@@ -96,7 +96,7 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 		return err
 	}
 	if !exists {
-		dp.log.Skipped(fmt.Sprintf("Docker network %q already removed", link.Name))
+		dp.log.Skipped(fmt.Sprintf("docker network name=%s already removed", link.Name))
 		return nil
 	}
 	// Otherwise, remove a Docker network.
@@ -104,7 +104,7 @@ func (dp *DockerProvider) LinkRemove(ctx context.Context, link topology.Link) er
 	if err != nil {
 		return err
 	}
-	dp.log.Success(fmt.Sprintf("removed Docker network %q", link.Name))
+	dp.log.Success(fmt.Sprintf("removed docker network name=%s", link.Name))
 	return nil
 }
 
@@ -160,7 +160,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if exists {
-		dp.log.Skipped(fmt.Sprintf("Docker container %q already exists", node.Name))
+		dp.log.Skipped(fmt.Sprintf("docker container name=%s already exists", node.Name))
 		return nil
 	}
 	// Generate new container configuration
@@ -187,7 +187,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 	if err != nil {
 		return err
 	}
-	dp.log.Success(fmt.Sprintf("started Docker container %q: ID=%s", node.Name, string(resp.ID[:12])))
+	dp.log.Success(fmt.Sprintf("started docker container name=%s, id=%s", node.Name, string(resp.ID[:12])))
 	return nil
 }
 
@@ -198,7 +198,7 @@ func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) er
 		return err
 	}
 	if !exists {
-		dp.log.Skipped(fmt.Sprintf("Docker container %q already removed", node.Name))
+		dp.log.Skipped(fmt.Sprintf("docker container name=%s already removed", node.Name))
 		return err
 	}
 	// Remove container
@@ -206,6 +206,6 @@ func (dp *DockerProvider) NodeRemove(ctx context.Context, node topology.Node) er
 	if err != nil {
 		return err
 	}
-	dp.log.Success(fmt.Sprintf("removed Docker container %q", node.Name))
+	dp.log.Success(fmt.Sprintf("removed docker container name=%s", node.Name))
 	return nil
 }
