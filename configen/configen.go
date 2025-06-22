@@ -1,12 +1,14 @@
-// Package configen provides means to generate network devices' configuration.
+// Package configen provides means to generate network device configuration.
 package configen
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"os"
 	"path/filepath"
 
+	"github.com/elupevg/golab/logger"
 	"github.com/elupevg/golab/topology"
 	"github.com/elupevg/golab/vendors"
 )
@@ -14,11 +16,27 @@ import (
 //go:embed templates
 var configTemplates embed.FS
 
-func GenerateAndDump(topo *topology.Topology, rootDir string) error {
+// ConfigenProvider stores cached logger.
+type ConfigenProvider struct {
+	log *logger.Logger
+}
+
+// New returns an instance of a ConfigenProvider.
+func New(log *logger.Logger) *ConfigenProvider {
+	return &ConfigenProvider{log}
+}
+
+// GenerateAndDump generates configs for all nodes in the topology and dumps them into provided directory.
+func (cp *ConfigenProvider) GenerateAndDump(topo *topology.Topology, rootDir string) error {
 	for _, node := range topo.Nodes {
 		// create a directory for the node
 		nodeDir := filepath.Join(rootDir, node.Name)
-		if err := os.Mkdir(nodeDir, 0o750); err != nil {
+		err := os.Mkdir(nodeDir, 0o750)
+		if err != nil {
+			if errors.Is(err, os.ErrExist) {
+				cp.log.Skipped("already created configuration for node " + node.Name)
+				continue
+			}
 			return err
 		}
 		var remoteDir, fileName string
@@ -44,6 +62,27 @@ func GenerateAndDump(topo *topology.Topology, rootDir string) error {
 			}
 		}
 		node.Binds = append(node.Binds, nodeDir+":"+remoteDir)
+		cp.log.Success("generated configuration for node " + node.Name)
+	}
+	return nil
+}
+
+// Cleanup removes auto-generated configs for all nodes in the topology.
+func (cp *ConfigenProvider) Cleanup(topo *topology.Topology, rootDir string) error {
+	for _, node := range topo.Nodes {
+		nodeDir := filepath.Join(rootDir, node.Name)
+		_, err := os.Stat(nodeDir)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				cp.log.Skipped("already removed configuration for node " + node.Name)
+				continue
+			}
+			return err
+		}
+		if err := os.RemoveAll(nodeDir); err != nil {
+			return err
+		}
+		cp.log.Success("removed configuration for node " + node.Name)
 	}
 	return nil
 }

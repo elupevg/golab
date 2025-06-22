@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/elupevg/golab"
+	"github.com/elupevg/golab/configen"
 	"github.com/elupevg/golab/docker"
 	"github.com/elupevg/golab/logger"
 )
@@ -40,7 +41,7 @@ func main() {
 		log.Error(fmt.Errorf("expected 1 topology YAML file but found %d", len(yamlFiles)))
 		os.Exit(1)
 	}
-	log.Success(fmt.Sprintf("discovered topology file %s", yamlFiles[0]))
+	log.Success(fmt.Sprintf("found topology file %s", yamlFiles[0]))
 	data, err := os.ReadFile(yamlFiles[0])
 	if err != nil {
 		log.Error(err)
@@ -54,7 +55,8 @@ func main() {
 	defer dockerClient.Close()
 
 	dockerProvider := docker.New(dockerClient, log)
-	if err := cmd(context.Background(), data, dockerProvider); err != nil {
+	configProvider := configen.New(log)
+	if err := cmd(context.Background(), data, dockerProvider, configProvider); err != nil {
 		log.Error(err)
 		os.Exit(1)
 	}

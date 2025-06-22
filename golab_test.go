@@ -10,6 +10,7 @@ import (
 )
 
 const testYAML = `
+generate_configs: true
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
@@ -63,13 +64,25 @@ func (s *stubVirtProvider) NodeRemove(_ context.Context, _ topology.Node) error 
 	return nil
 }
 
+type stubConfProvider struct {
+	err error
+}
+
+func (s *stubConfProvider) GenerateAndDump(_ *topology.Topology, _ string) error {
+	return s.err
+}
+
+func (s *stubConfProvider) Cleanup(_ *topology.Topology, _ string) error {
+	return s.err
+}
+
 func TestBuildWreck(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	vp := new(stubVirtProvider)
-	// Build the topology
+	// build the topology
 	wantLinks, wantNodes := 2, 3
-	err := golab.Build(ctx, []byte(testYAML), vp)
+	err := golab.Build(ctx, []byte(testYAML), vp, new(stubConfProvider))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,14 +92,14 @@ func TestBuildWreck(t *testing.T) {
 	if vp.linkCount != wantLinks {
 		t.Fatalf("links: want %d, got %d", wantLinks, vp.linkCount)
 	}
-	// Wreck the topology
+	// wreck the topology
 	wantLinks, wantNodes = 0, 0
-	err = golab.Wreck(ctx, []byte(testYAML), vp)
+	err = golab.Wreck(ctx, []byte(testYAML), vp, new(stubConfProvider))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if vp.nodeCount != wantNodes {
-		t.Errorf("nodes: want %d, got %d", wantNodes, vp.nodeCount)
+		t.Fatalf("nodes: want %d, got %d", wantNodes, vp.nodeCount)
 	}
 	if vp.linkCount != wantLinks {
 		t.Errorf("links: want %d, got %d", wantLinks, vp.linkCount)
@@ -97,9 +110,9 @@ func TestBuildLinkError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create link")
 	vp := &stubVirtProvider{linkErr: wantErr}
-	err := golab.Build(context.Background(), []byte(testYAML), vp)
+	err := golab.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
-		t.Fatalf("error: want %q, got %q", wantErr, err)
+		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
 }
 
@@ -107,25 +120,25 @@ func TestBuildNodeError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create node")
 	vp := &stubVirtProvider{nodeErr: wantErr}
-	err := golab.Build(context.Background(), []byte(testYAML), vp)
+	err := golab.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
-		t.Fatalf("error: want %q, got %q", wantErr, err)
+		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
 }
 
 func TestBuildCorruptYAMLError(t *testing.T) {
 	t.Parallel()
-	err := golab.Build(context.Background(), []byte(`name`), new(stubVirtProvider))
+	err := golab.Build(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
 	if !errors.Is(err, topology.ErrCorruptYAML) {
-		t.Fatalf("error: want %q, got %q", topology.ErrCorruptYAML, err)
+		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
 	}
 }
 
 func TestWreckCorruptYAMLError(t *testing.T) {
 	t.Parallel()
-	err := golab.Wreck(context.Background(), []byte(`name`), new(stubVirtProvider))
+	err := golab.Wreck(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
 	if !errors.Is(err, topology.ErrCorruptYAML) {
-		t.Fatalf("error: want %q, got %q", topology.ErrCorruptYAML, err)
+		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
 	}
 }
 
@@ -133,9 +146,9 @@ func TestWreckLinkError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to remove link")
 	vp := &stubVirtProvider{linkErr: wantErr}
-	err := golab.Wreck(context.Background(), []byte(testYAML), vp)
+	err := golab.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
-		t.Fatalf("error: want %q, got %q", wantErr, err)
+		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
 }
 
@@ -143,8 +156,50 @@ func TestWreckNodeError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to remove node")
 	vp := &stubVirtProvider{nodeErr: wantErr}
-	err := golab.Wreck(context.Background(), []byte(testYAML), vp)
+	err := golab.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
-		t.Fatalf("error: want %q, got %q", wantErr, err)
+		t.Errorf("error: want %q, got %q", wantErr, err)
+	}
+}
+
+func TestBuildConfigError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	vp := new(stubVirtProvider)
+	cp := new(stubConfProvider)
+	cp.err = errors.New("failed to generate configs")
+	wantLinks, wantNodes := 0, 0
+	err := golab.Build(ctx, []byte(testYAML), vp, cp)
+	if !errors.Is(err, cp.err) {
+		t.Fatalf("error: want %q, got %q", cp.err, err)
+	}
+	if vp.nodeCount != wantNodes {
+		t.Fatalf("nodes: want %d, got %d", wantNodes, vp.nodeCount)
+	}
+	if vp.linkCount != wantLinks {
+		t.Errorf("links: want %d, got %d", wantLinks, vp.linkCount)
+	}
+}
+
+func TestWreckConfigError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	vp := new(stubVirtProvider)
+	cp := new(stubConfProvider)
+	err := golab.Build(ctx, []byte(testYAML), vp, cp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cp.err = errors.New("failed to cleanup configs")
+	wantLinks, wantNodes := 0, 0
+	err = golab.Wreck(ctx, []byte(testYAML), vp, cp)
+	if !errors.Is(err, cp.err) {
+		t.Fatalf("error: want %q, got %q", cp.err, err)
+	}
+	if vp.nodeCount != wantNodes {
+		t.Fatalf("nodes: want %d, got %d", wantNodes, vp.nodeCount)
+	}
+	if vp.linkCount != wantLinks {
+		t.Errorf("links: want %d, got %d", wantLinks, vp.linkCount)
 	}
 }

@@ -2,12 +2,14 @@ package configen_test
 
 import (
 	"embed"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/elupevg/golab/configen"
+	"github.com/elupevg/golab/logger"
 	"github.com/elupevg/golab/topology"
 	"github.com/google/go-cmp/cmp"
 )
@@ -54,7 +56,8 @@ func TestGenerateAndDump(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = configen.GenerateAndDump(topo, tempDir)
+	cp := configen.New(logger.New(io.Discard, io.Discard))
+	err = cp.GenerateAndDump(topo, tempDir)
 	if err != nil {
 		t.Fatal(err)
 	}

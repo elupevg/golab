@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/elupevg/golab/configen"
 	"github.com/elupevg/golab/topology"
 )
 
@@ -17,17 +16,23 @@ type VirtProvider interface {
 	NodeRemove(ctx context.Context, node topology.Node) error
 }
 
+// ConfProvider represents a node configuration provider and its methods.
+type ConfProvider interface {
+	GenerateAndDump(topo *topology.Topology, path string) error
+	Cleanup(topo *topology.Topology, path string) error
+}
+
 // Command represents a network topology orchestration command.
-type Command func(ctx context.Context, data []byte, vp VirtProvider) error
+type Command func(ctx context.Context, data []byte, vp VirtProvider, cp ConfProvider) error
 
 // Build creates a virtual network topology described in the provided YAML intent file.
-func Build(ctx context.Context, data []byte, vp VirtProvider) error {
+func Build(ctx context.Context, data []byte, vp VirtProvider, cp ConfProvider) error {
 	topo, err := topology.FromYAML(data)
 	if err != nil {
 		return err
 	}
 	if topo.GenerateConfigs {
-		err := configen.GenerateAndDump(topo, os.Getenv("PWD"))
+		err := cp.GenerateAndDump(topo, os.Getenv("PWD"))
 		if err != nil {
 			return err
 		}
@@ -48,7 +53,7 @@ func Build(ctx context.Context, data []byte, vp VirtProvider) error {
 }
 
 // Wreck deletes a virtual network topology described in the provided YAML intent file.
-func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
+func Wreck(ctx context.Context, data []byte, vp VirtProvider, cp ConfProvider) error {
 	topo, err := topology.FromYAML(data)
 	if err != nil {
 		return err
@@ -61,6 +66,12 @@ func Wreck(ctx context.Context, data []byte, vp VirtProvider) error {
 	}
 	for _, link := range topo.Links {
 		err := vp.LinkRemove(ctx, *link)
+		if err != nil {
+			return err
+		}
+	}
+	if topo.GenerateConfigs {
+		err := cp.Cleanup(topo, os.Getenv("PWD"))
 		if err != nil {
 			return err
 		}
