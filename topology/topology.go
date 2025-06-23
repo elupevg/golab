@@ -54,6 +54,7 @@ type Node struct {
 	Binds      []string `yaml:"binds"`
 	Vendor     vendors.Vendor
 	Interfaces []*Interface
+	Loopbacks  []string `yaml:"loopbacks"`
 }
 
 // Interface respresents a network node attachment to a link.
@@ -104,6 +105,26 @@ func (n *Node) populateBinds() error {
 	return nil
 }
 
+func (topo *Topology) populateLoopbacks(node *Node) error {
+	if node.Loopbacks == nil {
+		return nil
+	}
+	iface := &Interface{Name: "lo"}
+	for _, addr := range node.Loopbacks {
+		ipAddr, _, err := net.ParseCIDR(addr)
+		if err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidCIDR, addr)
+		}
+		if ipAddr.To4() != nil {
+			iface.IPv4 = addr
+		} else {
+			iface.IPv6 = addr
+		}
+	}
+	node.Interfaces = append(node.Interfaces, iface)
+	return nil
+}
+
 // populateNodes runs sanity checks on nodes and populates empty fields.
 func (topo *Topology) populateNodes() error {
 	// topology must contain at least one node
@@ -118,6 +139,9 @@ func (topo *Topology) populateNodes() error {
 		node.Name = name
 		node.Vendor = vendors.DetectByImage(node.Image)
 		if err := node.populateBinds(); err != nil {
+			return err
+		}
+		if err := topo.populateLoopbacks(node); err != nil {
 			return err
 		}
 	}

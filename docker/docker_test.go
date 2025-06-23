@@ -169,6 +169,11 @@ func TestNodeCreateRemove(t *testing.T) {
 		Binds: []string{"/lib/modules:/lib/modules"},
 		Interfaces: []*topology.Interface{
 			{
+				Name: "lo",
+				IPv4: "192.168.0.1/32",
+				IPv6: "2001:db8:192:168::1/128",
+			},
+			{
 				Name: "eth0",
 				Link: "golab-link-1",
 				IPv4: "100.64.0.1/29",

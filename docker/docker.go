@@ -137,6 +137,9 @@ func generateMounts(node topology.Node) []mount.Mount {
 func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
 	endpoints := make(map[string]*network.EndpointSettings, len(node.Interfaces))
 	for _, iface := range node.Interfaces {
+		if iface.Name == "lo" {
+			continue
+		}
 		ipv4Addr, _, _ := strings.Cut(iface.IPv4, "/")
 		ipv6Addr, _, _ := strings.Cut(iface.IPv6, "/")
 		endpoints[iface.Link] = &network.EndpointSettings{

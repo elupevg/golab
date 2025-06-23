@@ -26,12 +26,15 @@ func TestFromYAML(t *testing.T) {
                           frr01:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr01:/etc/frr", "/lib/modules:/lib/modules"]
+                            loopbacks: [192.168.0.1/32, 2001:db8:192:168::1/128]
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr02:/etc/frr", "/lib/modules:/lib/modules"]
+                            loopbacks: [192.168.0.2/32, 2001:db8:192:168::2/128]
                           frr03:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr03:/etc/frr", "/lib/modules:/lib/modules"]
+                            loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             name: "ptp1"
@@ -56,6 +59,11 @@ func TestFromYAML(t *testing.T) {
 						},
 						Interfaces: []*topology.Interface{
 							{
+								Name: "lo",
+								IPv4: "192.168.0.1/32",
+								IPv6: "2001:db8:192:168::1/128",
+							},
+							{
 								Name: "eth0",
 								Link: "ptp1",
 								IPv4: "100.64.1.1/29",
@@ -68,6 +76,10 @@ func TestFromYAML(t *testing.T) {
 								IPv6: "2001:db8:2::1/64",
 							},
 						},
+						Loopbacks: []string{
+							"192.168.0.1/32",
+							"2001:db8:192:168::1/128",
+						},
 					},
 					"frr02": {
 						Name:   "frr02",
@@ -78,6 +90,11 @@ func TestFromYAML(t *testing.T) {
 							"/lib/modules:/lib/modules",
 						},
 						Interfaces: []*topology.Interface{
+							{
+								Name: "lo",
+								IPv4: "192.168.0.2/32",
+								IPv6: "2001:db8:192:168::2/128",
+							},
 							{
 								Name: "eth0",
 								Link: "ptp1",
@@ -91,6 +108,10 @@ func TestFromYAML(t *testing.T) {
 								IPv6: "2001:db8:3::1/64",
 							},
 						},
+						Loopbacks: []string{
+							"192.168.0.2/32",
+							"2001:db8:192:168::2/128",
+						},
 					},
 					"frr03": {
 						Name:   "frr03",
@@ -101,6 +122,11 @@ func TestFromYAML(t *testing.T) {
 							"/lib/modules:/lib/modules",
 						},
 						Interfaces: []*topology.Interface{
+							{
+								Name: "lo",
+								IPv4: "192.168.0.3/32",
+								IPv6: "2001:db8:192:168::3/128",
+							},
 							{
 								Name: "eth0",
 								Link: "ptp2",
@@ -113,6 +139,10 @@ func TestFromYAML(t *testing.T) {
 								IPv4: "100.64.3.2/29",
 								IPv6: "2001:db8:3::2/64",
 							},
+						},
+						Loopbacks: []string{
+							"192.168.0.3/32",
+							"2001:db8:192:168::3/128",
 						},
 					},
 				},
@@ -520,6 +550,16 @@ func TestFromYAML_Errors(t *testing.T) {
                             image: "quay.io/frrouting/frr:master"
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrInvalidCIDR,
+		},
+		{
+			name: "InvalidLoopback",
+			data: `
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                            loopbacks: ["256.168.0.1/32"]
                         `,
 			err: topology.ErrInvalidCIDR,
 		},
