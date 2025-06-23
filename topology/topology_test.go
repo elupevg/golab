@@ -213,7 +213,7 @@ func TestFromYAML(t *testing.T) {
                         name: "multihome"
                         ip_start_from:
                            links: ["100.64.0.0/29", "2001:db8::/64"]
-                           loopbacks: ["192.168.0.1/32", "2001:db8:168::/128"]
+                           loopbacks: ["192.168.0.1/32", "2001:db8:192:168::1/128"]
                         nodes:
                           router:
                             image: "quay.io/frrouting/frr:master"
@@ -230,17 +230,62 @@ func TestFromYAML(t *testing.T) {
 				IPStartFrom: &topology.IPStartFrom{
 					RawLinks: []string{"100.64.0.16/29", "2001:db8:0:2::/64"},
 					RawLoopbacks: []string{
-						"192.168.0.1/32",
-						"2001:db8:168::/128",
+						"192.168.0.4/32",
+						"2001:db8:192:168::4/128",
 					},
 				},
 				Nodes: map[string]*topology.Node{
+					"isp1": {
+						Name:   "isp1",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "lo",
+								IPv4: "192.168.0.1/32",
+								IPv6: "2001:db8:192:168::1/128",
+							},
+							{
+								Name: "eth0",
+								Link: "golab-link-1",
+								IPv4: "100.64.0.1/29",
+								IPv6: "2001:db8::1/64",
+							},
+						},
+						Loopbacks: []string{"192.168.0.1/32", "2001:db8:192:168::1/128"},
+					},
+					"isp2": {
+						Name:   "isp2",
+						Vendor: vendors.FRR,
+						Image:  "quay.io/frrouting/frr:master",
+						Binds:  []string{"/lib/modules:/lib/modules"},
+						Interfaces: []*topology.Interface{
+							{
+								Name: "lo",
+								IPv4: "192.168.0.2/32",
+								IPv6: "2001:db8:192:168::2/128",
+							},
+							{
+								Name: "eth0",
+								Link: "golab-link-2",
+								IPv4: "100.64.0.9/29",
+								IPv6: "2001:db8:0:1::1/64",
+							},
+						},
+						Loopbacks: []string{"192.168.0.2/32", "2001:db8:192:168::2/128"},
+					},
 					"router": {
 						Name:   "router",
 						Vendor: vendors.FRR,
 						Image:  "quay.io/frrouting/frr:master",
 						Binds:  []string{"/lib/modules:/lib/modules"},
 						Interfaces: []*topology.Interface{
+							{
+								Name: "lo",
+								IPv4: "192.168.0.3/32",
+								IPv6: "2001:db8:192:168::3/128",
+							},
 							{
 								Name: "eth0",
 								Link: "golab-link-1",
@@ -254,34 +299,7 @@ func TestFromYAML(t *testing.T) {
 								IPv6: "2001:db8:0:1::2/64",
 							},
 						},
-					},
-					"isp1": {
-						Name:   "isp1",
-						Vendor: vendors.FRR,
-						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"/lib/modules:/lib/modules"},
-						Interfaces: []*topology.Interface{
-							{
-								Name: "eth0",
-								Link: "golab-link-1",
-								IPv4: "100.64.0.1/29",
-								IPv6: "2001:db8::1/64",
-							},
-						},
-					},
-					"isp2": {
-						Name:   "isp2",
-						Vendor: vendors.FRR,
-						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"/lib/modules:/lib/modules"},
-						Interfaces: []*topology.Interface{
-							{
-								Name: "eth0",
-								Link: "golab-link-2",
-								IPv4: "100.64.0.9/29",
-								IPv6: "2001:db8:0:1::1/64",
-							},
-						},
+						Loopbacks: []string{"192.168.0.3/32", "2001:db8:192:168::3/128"},
 					},
 				},
 				Links: []*topology.Link{
@@ -560,6 +578,22 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr01:
                             image: "quay.io/frrouting/frr:master"
                             loopbacks: ["256.168.0.1/32"]
+                        `,
+			err: topology.ErrInvalidCIDR,
+		},
+		{
+			name: "InvalidAutoLoopback",
+			data: `
+                        ip_start_from:
+                           links: ["100.64.1.0/24"]
+                           loopbacks: ["256.168.0.1/32"]
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
                         `,
 			err: topology.ErrInvalidCIDR,
 		},

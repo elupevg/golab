@@ -4,6 +4,7 @@ package topology
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"path"
@@ -30,6 +31,7 @@ var (
 	ErrMissingImage     = errors.New("node is missing image specification")
 	ErrInvalidBind      = errors.New("invalid bind format")
 	ErrMissingSubnets   = errors.New("no subnets defined for a link")
+	ErrMissingLoopbacks = errors.New("no loopbacks defined for a node")
 )
 
 // Topology represents a virtual network comprised of nodes and links.
@@ -107,7 +109,21 @@ func (n *Node) populateBinds() error {
 
 func (topo *Topology) populateLoopbacks(node *Node) error {
 	if node.Loopbacks == nil {
-		return nil
+		if topo.IPStartFrom == nil || topo.IPStartFrom.RawLoopbacks == nil {
+			return nil
+		}
+		newSubnets := make([]string, 0, 2)
+		for _, subnet := range topo.IPStartFrom.RawLoopbacks {
+			_, ipnet, err := net.ParseCIDR(subnet)
+			if err != nil {
+				return fmt.Errorf("%w: %s", ErrInvalidCIDR, subnet)
+			}
+			node.Loopbacks = append(node.Loopbacks, subnet)
+			prefixLen, _ := ipnet.Mask.Size()
+			newIPNet, _ := cidr.NextSubnet(ipnet, prefixLen)
+			newSubnets = append(newSubnets, newIPNet.String())
+		}
+		topo.IPStartFrom.RawLoopbacks = newSubnets
 	}
 	iface := &Interface{Name: "lo"}
 	for _, addr := range node.Loopbacks {
@@ -132,7 +148,8 @@ func (topo *Topology) populateNodes() error {
 		return ErrZeroNodes
 	}
 	// populate node fields
-	for name, node := range topo.Nodes {
+	for _, name := range slices.Sorted(maps.Keys(topo.Nodes)) {
+		node := topo.Nodes[name]
 		if node == nil || node.Image == "" {
 			return fmt.Errorf("%w: %s", ErrMissingImage, name)
 		}
