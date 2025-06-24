@@ -1,9 +1,9 @@
-bgpd=no
-ospfd=no
-ospf6d=no
+bgpd={{ .Protocols.bgp }}
+ospfd={{ .Protocols.ospf }}
+ospf6d={{ .Protocols.ospf6 }}
 ripd=no
 ripngd=no
-isisd=no
+isisd={{ .Protocols.isis }}
 pimd=no
 pim6d=no
 ldpd=no

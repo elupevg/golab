@@ -27,14 +27,17 @@ func TestFromYAML(t *testing.T) {
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr01:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.1/32, 2001:db8:192:168::1/128]
+                            enable: [isis, bgp]
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr02:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.2/32, 2001:db8:192:168::2/128]
+                            enable: [isis, bgp]
                           frr03:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr03:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
+                            enable: [isis, bgp]
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             name: "ptp1"
@@ -80,6 +83,8 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.1/32",
 							"2001:db8:192:168::1/128",
 						},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Enable:    []string{"isis", "bgp"},
 					},
 					"frr02": {
 						Name:   "frr02",
@@ -112,6 +117,8 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.2/32",
 							"2001:db8:192:168::2/128",
 						},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Enable:    []string{"isis", "bgp"},
 					},
 					"frr03": {
 						Name:   "frr03",
@@ -144,6 +151,8 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.3/32",
 							"2001:db8:192:168::3/128",
 						},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Enable:    []string{"isis", "bgp"},
 					},
 				},
 				Links: []*topology.Link{
@@ -254,6 +263,8 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.1/32", "2001:db8:192:168::1/128"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Enable:    nil,
 					},
 					"isp2": {
 						Name:   "isp2",
@@ -274,6 +285,8 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.2/32", "2001:db8:192:168::2/128"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Enable:    nil,
 					},
 					"router": {
 						Name:   "router",
@@ -300,6 +313,8 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.3/32", "2001:db8:192:168::3/128"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Enable:    nil,
 					},
 				},
 				Links: []*topology.Link{
@@ -596,6 +611,22 @@ func TestFromYAML_Errors(t *testing.T) {
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                         `,
 			err: topology.ErrInvalidCIDR,
+		},
+		{
+			name: "UnknownProtocol",
+			data: `
+                        ip_start_from:
+                           links: ["100.64.1.0/24"]
+                        nodes:
+                          frr01:
+                            image: "quay.io/frrouting/frr:master"
+                            enable: [rsvp, ospf]
+                          frr02:
+                            image: "quay.io/frrouting/frr:master"
+                        links:
+                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                        `,
+			err: topology.ErrUnknownProtocol,
 		},
 	}
 	for _, tc := range testCases {

@@ -32,6 +32,7 @@ var (
 	ErrInvalidBind      = errors.New("invalid bind format")
 	ErrMissingSubnets   = errors.New("no subnets defined for a link")
 	ErrMissingLoopbacks = errors.New("no loopbacks defined for a node")
+	ErrUnknownProtocol  = errors.New("unknown protocol")
 )
 
 // Topology represents a virtual network comprised of nodes and links.
@@ -57,6 +58,8 @@ type Node struct {
 	Vendor     vendors.Vendor
 	Interfaces []*Interface
 	Loopbacks  []string `yaml:"loopbacks"`
+	Protocols  map[string]string
+	Enable     []string `yaml:"enable"`
 }
 
 // Interface respresents a network node attachment to a link.
@@ -141,6 +144,27 @@ func (topo *Topology) populateLoopbacks(node *Node) error {
 	return nil
 }
 
+func (node *Node) populateProtocols() error {
+	suppProtocols := map[string]string{
+		"isis":  "no",
+		"ospf":  "no",
+		"ospf6": "no",
+		"bgp":   "no",
+	}
+	if len(node.Enable) == 0 {
+		node.Protocols = suppProtocols
+		return nil
+	}
+	for _, proto := range node.Enable {
+		if _, ok := suppProtocols[proto]; !ok {
+			return fmt.Errorf("%w %q in node %q configuration", ErrUnknownProtocol, proto, node.Name)
+		}
+		suppProtocols[proto] = "yes"
+	}
+	node.Protocols = suppProtocols
+	return nil
+}
+
 // populateNodes runs sanity checks on nodes and populates empty fields.
 func (topo *Topology) populateNodes() error {
 	// topology must contain at least one node
@@ -156,6 +180,9 @@ func (topo *Topology) populateNodes() error {
 		node.Name = name
 		node.Vendor = vendors.DetectByImage(node.Image)
 		if err := node.populateBinds(); err != nil {
+			return err
+		}
+		if err := node.populateProtocols(); err != nil {
 			return err
 		}
 		if err := topo.populateLoopbacks(node); err != nil {
