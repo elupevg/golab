@@ -29,27 +29,27 @@ func main() {
 	case "wreck":
 		cmd = golab.Wreck
 	default:
-		log.Error(fmt.Errorf("unknown command %q", os.Args[1]))
+		log.Errored(fmt.Errorf("unknown command %q", os.Args[1]))
 		os.Exit(1)
 	}
 	yamlFiles, err := filepath.Glob("*.yml")
 	if err != nil {
-		log.Error(err)
+		log.Errored(err)
 		os.Exit(1)
 	}
 	if len(yamlFiles) != 1 {
-		log.Error(fmt.Errorf("expected 1 topology YAML file but found %d", len(yamlFiles)))
+		log.Errored(fmt.Errorf("expected 1 topology YAML file but found %d", len(yamlFiles)))
 		os.Exit(1)
 	}
 	log.Success(fmt.Sprintf("found topology file %s", yamlFiles[0]))
 	data, err := os.ReadFile(yamlFiles[0])
 	if err != nil {
-		log.Error(err)
+		log.Errored(err)
 		os.Exit(1)
 	}
 	dockerClient, err := client.NewClientWithOpts(client.WithAPIVersionNegotiation())
 	if err != nil {
-		log.Error(err)
+		log.Errored(err)
 		os.Exit(1)
 	}
 	defer dockerClient.Close()
@@ -57,7 +57,7 @@ func main() {
 	dockerProvider := docker.New(dockerClient, log)
 	configProvider := configen.New(log)
 	if err := cmd(context.Background(), data, dockerProvider, configProvider); err != nil {
-		log.Error(err)
+		log.Errored(err)
 		os.Exit(1)
 	}
 }
