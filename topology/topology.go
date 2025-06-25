@@ -150,6 +150,7 @@ func (node *Node) populateProtocols() error {
 		"ospf":  "no",
 		"ospf6": "no",
 		"bgp":   "no",
+		"ldp":   "no",
 	}
 	if len(node.Enable) == 0 {
 		node.Protocols = suppProtocols

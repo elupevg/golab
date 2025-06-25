@@ -83,7 +83,7 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.1/32",
 							"2001:db8:192:168::1/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    []string{"isis", "bgp"},
 					},
 					"frr02": {
@@ -117,7 +117,7 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.2/32",
 							"2001:db8:192:168::2/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    []string{"isis", "bgp"},
 					},
 					"frr03": {
@@ -151,7 +151,7 @@ func TestFromYAML(t *testing.T) {
 							"192.168.0.3/32",
 							"2001:db8:192:168::3/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    []string{"isis", "bgp"},
 					},
 				},
@@ -263,7 +263,7 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.1/32", "2001:db8:192:168::1/128"},
-						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    nil,
 					},
 					"isp2": {
@@ -285,7 +285,7 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.2/32", "2001:db8:192:168::2/128"},
-						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    nil,
 					},
 					"router": {
@@ -313,7 +313,7 @@ func TestFromYAML(t *testing.T) {
 							},
 						},
 						Loopbacks: []string{"192.168.0.3/32", "2001:db8:192:168::3/128"},
-						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no"},
+						Protocols: map[string]string{"bgp": "no", "isis": "no", "ospf": "no", "ospf6": "no", "ldp": "no"},
 						Enable:    nil,
 					},
 				},
