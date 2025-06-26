@@ -2,10 +2,40 @@ frr defaults traditional
 hostname {{.Name}}
 service integrated-vtysh-config
 !
-{{ range .Interfaces -}}
+{{- range .Interfaces }}
 interface {{.Name}}
-{{ if .IPv4 }} ip address {{.IPv4}}{{ end }}
-{{ if .IPv6 }} ipv6 address {{.IPv6}}{{- end }}
+{{- if .IPv4 }}
+ ip address {{.IPv4}}
+{{- end }}
+{{- if eq "yes" $.Protocols.ospf }}
+ ip ospf area 0
+{{- if eq "lo" .Name }}
+ ip ospf passive
+{{- else }}
+ ip ospf network point-to-point
+{{- end }}
+{{- end }}
+{{- if .IPv6 }}
+ ipv6 address {{.IPv6}}
+{{- end }}
+{{- if eq "yes" $.Protocols.ospf6 }}
+ ipv6 ospf6 area 0
+{{- if eq "lo" .Name }}
+ ipv6 ospf6 passive
+{{- else }}
+ ipv6 ospf6 network point-to-point
+{{- end }}
+{{- end }}
 exit
 !
-{{ end -}}
+{{- end }}
+{{- if eq .Protocols.ospf "yes" }}
+router ospf
+exit
+!
+{{- end }}
+{{- if eq .Protocols.ospf6 "yes" }}
+router ospf6
+exit
+!
+{{- end }}

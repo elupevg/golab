@@ -24,6 +24,8 @@ ip_start_from:
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
+    loopbacks: [192.168.0.1/32, 2001:db8:192:168::1/128]
+    enable: [ospf, ospf6]
   frr02:
     image: "quay.io/frrouting/frr:master"
   frr03:
