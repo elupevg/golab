@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
-	"github.com/elupevg/golab"
-	"github.com/elupevg/golab/configen"
-	"github.com/elupevg/golab/docker"
-	"github.com/elupevg/golab/logger"
+	"github.com/elupevg/golab/internal/configen"
+	"github.com/elupevg/golab/internal/docker"
+	"github.com/elupevg/golab/internal/logger"
+	"github.com/elupevg/golab/internal/orchestrator"
 )
 
 const usage = "Usage:\n  golab build\n  golab wreck"
@@ -22,12 +22,12 @@ func main() {
 		fmt.Println(usage)
 		return
 	}
-	var cmd golab.Command
+	var cmd orchestrator.Command
 	switch os.Args[1] {
 	case "build":
-		cmd = golab.Build
+		cmd = orchestrator.Build
 	case "wreck":
-		cmd = golab.Wreck
+		cmd = orchestrator.Wreck
 	default:
 		log.Errored(fmt.Errorf("unknown command %q", os.Args[1]))
 		os.Exit(1)

@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/elupevg/golab/topology"
-	"github.com/elupevg/golab/vendors"
+	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/internal/vendors"
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -7,10 +7,10 @@ import (
 	"net"
 	"testing"
 
-	"github.com/elupevg/golab/docker"
-	"github.com/elupevg/golab/docker/fakeclient"
-	"github.com/elupevg/golab/logger"
-	"github.com/elupevg/golab/topology"
+	"github.com/elupevg/golab/internal/docker"
+	"github.com/elupevg/golab/internal/docker/fakeclient"
+	"github.com/elupevg/golab/internal/logger"
+	"github.com/elupevg/golab/internal/topology"
 )
 
 func TestLinkCreateRemove(t *testing.T) {

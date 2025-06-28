@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/apparentlymart/go-cidr/cidr"
-	"github.com/elupevg/golab/vendors"
+	"github.com/elupevg/golab/internal/vendors"
 	"github.com/goccy/go-yaml"
 )
 

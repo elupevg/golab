@@ -1,11 +1,11 @@
-// Package golab orchestrates virtual network topologies based on YAML intent files.
-package golab
+// Package orchestrator manages virtual network topologies based on YAML intent files.
+package orchestrator
 
 import (
 	"context"
 	"os"
 
-	"github.com/elupevg/golab/topology"
+	"github.com/elupevg/golab/internal/topology"
 )
 
 // VirtProvider represents a virtualization provider and its methods (e.g. Docker).

@@ -1,12 +1,12 @@
-package golab_test
+package orchestrator_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/elupevg/golab"
-	"github.com/elupevg/golab/topology"
+	"github.com/elupevg/golab/internal/orchestrator"
+	"github.com/elupevg/golab/internal/topology"
 )
 
 const testYAML = `
@@ -82,7 +82,7 @@ func TestBuildWreck(t *testing.T) {
 	vp := new(stubVirtProvider)
 	// build the topology
 	wantLinks, wantNodes := 2, 3
-	err := golab.Build(ctx, []byte(testYAML), vp, new(stubConfProvider))
+	err := orchestrator.Build(ctx, []byte(testYAML), vp, new(stubConfProvider))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestBuildWreck(t *testing.T) {
 	}
 	// wreck the topology
 	wantLinks, wantNodes = 0, 0
-	err = golab.Wreck(ctx, []byte(testYAML), vp, new(stubConfProvider))
+	err = orchestrator.Wreck(ctx, []byte(testYAML), vp, new(stubConfProvider))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestBuildLinkError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create link")
 	vp := &stubVirtProvider{linkErr: wantErr}
-	err := golab.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
+	err := orchestrator.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
@@ -120,7 +120,7 @@ func TestBuildNodeError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to create node")
 	vp := &stubVirtProvider{nodeErr: wantErr}
-	err := golab.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
+	err := orchestrator.Build(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
@@ -128,7 +128,7 @@ func TestBuildNodeError(t *testing.T) {
 
 func TestBuildCorruptYAMLError(t *testing.T) {
 	t.Parallel()
-	err := golab.Build(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
+	err := orchestrator.Build(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
 	if !errors.Is(err, topology.ErrCorruptYAML) {
 		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
 	}
@@ -136,7 +136,7 @@ func TestBuildCorruptYAMLError(t *testing.T) {
 
 func TestWreckCorruptYAMLError(t *testing.T) {
 	t.Parallel()
-	err := golab.Wreck(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
+	err := orchestrator.Wreck(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
 	if !errors.Is(err, topology.ErrCorruptYAML) {
 		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
 	}
@@ -146,7 +146,7 @@ func TestWreckLinkError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to remove link")
 	vp := &stubVirtProvider{linkErr: wantErr}
-	err := golab.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
+	err := orchestrator.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
@@ -156,7 +156,7 @@ func TestWreckNodeError(t *testing.T) {
 	t.Parallel()
 	wantErr := errors.New("failed to remove node")
 	vp := &stubVirtProvider{nodeErr: wantErr}
-	err := golab.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
+	err := orchestrator.Wreck(context.Background(), []byte(testYAML), vp, new(stubConfProvider))
 	if !errors.Is(err, wantErr) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
@@ -169,7 +169,7 @@ func TestBuildConfigError(t *testing.T) {
 	cp := new(stubConfProvider)
 	cp.err = errors.New("failed to generate configs")
 	wantLinks, wantNodes := 0, 0
-	err := golab.Build(ctx, []byte(testYAML), vp, cp)
+	err := orchestrator.Build(ctx, []byte(testYAML), vp, cp)
 	if !errors.Is(err, cp.err) {
 		t.Fatalf("error: want %q, got %q", cp.err, err)
 	}
@@ -186,13 +186,13 @@ func TestWreckConfigError(t *testing.T) {
 	ctx := context.Background()
 	vp := new(stubVirtProvider)
 	cp := new(stubConfProvider)
-	err := golab.Build(ctx, []byte(testYAML), vp, cp)
+	err := orchestrator.Build(ctx, []byte(testYAML), vp, cp)
 	if err != nil {
 		t.Fatal(err)
 	}
 	cp.err = errors.New("failed to cleanup configs")
 	wantLinks, wantNodes := 0, 0
-	err = golab.Wreck(ctx, []byte(testYAML), vp, cp)
+	err = orchestrator.Wreck(ctx, []byte(testYAML), vp, cp)
 	if !errors.Is(err, cp.err) {
 		t.Fatalf("error: want %q, got %q", cp.err, err)
 	}

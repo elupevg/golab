@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/elupevg/golab/logger"
-	"github.com/elupevg/golab/topology"
-	"github.com/elupevg/golab/vendors"
+	"github.com/elupevg/golab/internal/logger"
+	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/internal/vendors"
 )
 
 //go:embed templates
