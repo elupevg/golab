@@ -17,7 +17,10 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-const autoLinkNamePrefix = "golab-link-"
+const (
+	mplsLabels         = 100_000
+	autoLinkNamePrefix = "golab-link-"
+)
 
 var (
 	ErrCorruptYAML      = errors.New("cannot parse YAML file")
@@ -60,14 +63,16 @@ type Node struct {
 	Loopbacks  []string `yaml:"loopbacks"`
 	Protocols  map[string]string
 	Enable     []string `yaml:"enable"`
+	Sysctls    map[string]string
 }
 
 // Interface respresents a network node attachment to a link.
 type Interface struct {
-	Name string
-	Link string
-	IPv4 string
-	IPv6 string
+	Name       string
+	Link       string
+	IPv4       string
+	IPv6       string
+	DriverOpts map[string]string
 }
 
 // Link represents a link in a virtual network topology.
@@ -289,11 +294,36 @@ func (topo *Topology) populateLinks() error {
 	return nil
 }
 
+// populateSysctls adds vendor-specific sysctl settings.
+func (topo *Topology) populateSysctls() error {
+	for _, node := range topo.Nodes {
+		if node.Vendor != vendors.FRR {
+			continue
+		}
+		if node.Protocols["ldp"] == "no" {
+			continue
+		}
+		sysctls := map[string]string{"net.mpls.platform_labels": strconv.Itoa(mplsLabels)}
+		for _, iface := range node.Interfaces {
+			if iface.Name == "lo" {
+				sysctls["net.mpls.conf.lo.input"] = "1"
+				continue
+			}
+			iface.DriverOpts = map[string]string{
+				"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+			}
+		}
+		node.Sysctls = sysctls
+	}
+	return nil
+}
+
 // populate runs sanity checks on the topology and populates empty fields.
 func (topo *Topology) populate() error {
 	validators := []func() error{
 		topo.populateNodes,
 		topo.populateLinks,
+		topo.populateSysctls,
 	}
 	for _, validator := range validators {
 		if err := validator(); err != nil {

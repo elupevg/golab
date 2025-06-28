@@ -27,17 +27,17 @@ func TestFromYAML(t *testing.T) {
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr01:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.1/32, 2001:db8:192:168::1/128]
-                            enable: [isis, bgp]
+                            enable: [isis, ldp]
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr02:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.2/32, 2001:db8:192:168::2/128]
-                            enable: [isis, bgp]
+                            enable: [isis, ldp]
                           frr03:
                             image: "quay.io/frrouting/frr:master"
                             binds: ["frr03:/etc/frr", "/lib/modules:/lib/modules"]
                             loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
-                            enable: [isis, bgp]
+                            enable: [isis, ldp]
                         links:
                           - endpoints: ["frr01:eth0", "frr02:eth0"]
                             name: "ptp1"
@@ -71,20 +71,30 @@ func TestFromYAML(t *testing.T) {
 								Link: "ptp1",
 								IPv4: "100.64.1.1/29",
 								IPv6: "2001:db8:1::1/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 							{
 								Name: "eth1",
 								Link: "ptp2",
 								IPv4: "100.64.2.1/29",
 								IPv6: "2001:db8:2::1/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 						},
 						Loopbacks: []string{
 							"192.168.0.1/32",
 							"2001:db8:192:168::1/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
-						Enable:    []string{"isis", "bgp"},
+						Protocols: map[string]string{"bgp": "no", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "yes"},
+						Enable:    []string{"isis", "ldp"},
+						Sysctls: map[string]string{
+							"net.mpls.conf.lo.input":   "1",
+							"net.mpls.platform_labels": "100000",
+						},
 					},
 					"frr02": {
 						Name:   "frr02",
@@ -105,20 +115,30 @@ func TestFromYAML(t *testing.T) {
 								Link: "ptp1",
 								IPv4: "100.64.1.2/29",
 								IPv6: "2001:db8:1::2/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
 								IPv4: "100.64.3.1/29",
 								IPv6: "2001:db8:3::1/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 						},
 						Loopbacks: []string{
 							"192.168.0.2/32",
 							"2001:db8:192:168::2/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
-						Enable:    []string{"isis", "bgp"},
+						Protocols: map[string]string{"bgp": "no", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "yes"},
+						Enable:    []string{"isis", "ldp"},
+						Sysctls: map[string]string{
+							"net.mpls.conf.lo.input":   "1",
+							"net.mpls.platform_labels": "100000",
+						},
 					},
 					"frr03": {
 						Name:   "frr03",
@@ -139,20 +159,30 @@ func TestFromYAML(t *testing.T) {
 								Link: "ptp2",
 								IPv4: "100.64.2.2/29",
 								IPv6: "2001:db8:2::2/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 							{
 								Name: "eth1",
 								Link: "ptp3",
 								IPv4: "100.64.3.2/29",
 								IPv6: "2001:db8:3::2/64",
+								DriverOpts: map[string]string{
+									"com.docker.network.endpoint.sysctls": "net.mpls.conf.IFNAME.input=1",
+								},
 							},
 						},
 						Loopbacks: []string{
 							"192.168.0.3/32",
 							"2001:db8:192:168::3/128",
 						},
-						Protocols: map[string]string{"bgp": "yes", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "no"},
-						Enable:    []string{"isis", "bgp"},
+						Protocols: map[string]string{"bgp": "no", "isis": "yes", "ospf": "no", "ospf6": "no", "ldp": "yes"},
+						Enable:    []string{"isis", "ldp"},
+						Sysctls: map[string]string{
+							"net.mpls.conf.lo.input":   "1",
+							"net.mpls.platform_labels": "100000",
+						},
 					},
 				},
 				Links: []*topology.Link{
@@ -229,7 +259,7 @@ func TestFromYAML(t *testing.T) {
                           isp1:
                             image: "quay.io/frrouting/frr:master"
                           isp2:
-                            image: "quay.io/frrouting/frr:master"
+                            image: "ceos:4.32.0F"
                         links:
                           - endpoints: ["isp1:eth0", "router:eth0"]
                           - endpoints: ["isp2:eth0", "router:eth1"]
@@ -268,9 +298,9 @@ func TestFromYAML(t *testing.T) {
 					},
 					"isp2": {
 						Name:   "isp2",
-						Vendor: vendors.FRR,
-						Image:  "quay.io/frrouting/frr:master",
-						Binds:  []string{"/lib/modules:/lib/modules"},
+						Vendor: vendors.ARISTA,
+						Image:  "ceos:4.32.0F",
+						Binds:  []string{},
 						Interfaces: []*topology.Interface{
 							{
 								Name: "lo",

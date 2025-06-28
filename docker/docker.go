@@ -147,6 +147,7 @@ func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
 				IPv4Address: ipv4Addr,
 				IPv6Address: ipv6Addr,
 			},
+			DriverOpts: iface.DriverOpts,
 		}
 	}
 	return &network.NetworkingConfig{EndpointsConfig: endpoints}
@@ -174,6 +175,7 @@ func (dp *DockerProvider) NodeCreate(ctx context.Context, node topology.Node) er
 		Privileged: true,
 		Init:       &initialize,
 		Mounts:     generateMounts(node),
+		Sysctls:    node.Sysctls,
 	}
 	netConfig := generateNetworkConfig(node)
 	platform := new(ocispec.Platform)
