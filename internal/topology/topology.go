@@ -40,17 +40,17 @@ var (
 
 // Topology represents a virtual network comprised of nodes and links.
 type Topology struct {
-	Name            string           `yaml:"name"`
-	Nodes           map[string]*Node `yaml:"nodes"`
-	Links           []*Link          `yaml:"links"`
-	IPStartFrom     *IPStartFrom     `yaml:"ip_start_from"`
-	GenerateConfigs bool             `yaml:"generate_configs"`
+	Name          string           `yaml:"name"`
+	Nodes         map[string]*Node `yaml:"nodes"`
+	Links         []*Link          `yaml:"links"`
+	IPStartFrom   *IPStartFrom     `yaml:"ip_start_from"`
+	ManageConfigs bool             `yaml:"manage_configs"`
 }
 
 // IPStartFrom represents a collection of initial subnets for auto-allocation.
 type IPStartFrom struct {
-	RawLinks     []string `yaml:"links"`
-	RawLoopbacks []string `yaml:"loopbacks"`
+	Links     []string `yaml:"links"`
+	Loopbacks []string `yaml:"loopbacks"`
 }
 
 // Node represents a node in a virtual network topology.
@@ -117,11 +117,11 @@ func (n *Node) populateBinds() error {
 
 func (topo *Topology) populateLoopbacks(node *Node) error {
 	if node.Loopbacks == nil {
-		if topo.IPStartFrom == nil || topo.IPStartFrom.RawLoopbacks == nil {
+		if topo.IPStartFrom == nil || topo.IPStartFrom.Loopbacks == nil {
 			return nil
 		}
 		newSubnets := make([]string, 0, 2)
-		for _, subnet := range topo.IPStartFrom.RawLoopbacks {
+		for _, subnet := range topo.IPStartFrom.Loopbacks {
 			_, ipnet, err := net.ParseCIDR(subnet)
 			if err != nil {
 				return fmt.Errorf("%w: %s", ErrInvalidCIDR, subnet)
@@ -131,7 +131,7 @@ func (topo *Topology) populateLoopbacks(node *Node) error {
 			newIPNet, _ := cidr.NextSubnet(ipnet, prefixLen)
 			newSubnets = append(newSubnets, newIPNet.String())
 		}
-		topo.IPStartFrom.RawLoopbacks = newSubnets
+		topo.IPStartFrom.Loopbacks = newSubnets
 	}
 	iface := &Interface{Name: "lo"}
 	for _, addr := range node.Loopbacks {
@@ -200,8 +200,8 @@ func (topo *Topology) populateNodes() error {
 
 // autoSubnets calculates new set of subnets for the next link.
 func (topo *Topology) autoSubnets() error {
-	newSubnets := make([]string, 0, len(topo.IPStartFrom.RawLinks))
-	for _, subnet := range topo.IPStartFrom.RawLinks {
+	newSubnets := make([]string, 0, len(topo.IPStartFrom.Links))
+	for _, subnet := range topo.IPStartFrom.Links {
 		_, ipnet, err := net.ParseCIDR(subnet)
 		if err != nil {
 			return fmt.Errorf("%w: %s", ErrInvalidCIDR, subnet)
@@ -210,17 +210,17 @@ func (topo *Topology) autoSubnets() error {
 		newIPNet, _ := cidr.NextSubnet(ipnet, prefixLen)
 		newSubnets = append(newSubnets, newIPNet.String())
 	}
-	topo.IPStartFrom.RawLinks = newSubnets
+	topo.IPStartFrom.Links = newSubnets
 	return nil
 }
 
 // allocateIPSubnets validates/allocates link IP subnets and addresses.
 func (topo *Topology) allocateIPSubnets(link *Link) error {
 	if link.RawSubnets == nil {
-		if topo.IPStartFrom == nil || topo.IPStartFrom.RawLinks == nil {
+		if topo.IPStartFrom == nil || topo.IPStartFrom.Links == nil {
 			return fmt.Errorf("%w: %q", ErrMissingSubnets, link.Name)
 		}
-		link.RawSubnets = topo.IPStartFrom.RawLinks
+		link.RawSubnets = topo.IPStartFrom.Links
 		if err := topo.autoSubnets(); err != nil {
 			return err
 		}

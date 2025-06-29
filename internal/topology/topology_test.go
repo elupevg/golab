@@ -267,8 +267,8 @@ func TestFromYAML(t *testing.T) {
 			want: &topology.Topology{
 				Name: "multihome",
 				IPStartFrom: &topology.IPStartFrom{
-					RawLinks: []string{"100.64.0.16/29", "2001:db8:0:2::/64"},
-					RawLoopbacks: []string{
+					Links: []string{"100.64.0.16/29", "2001:db8:0:2::/64"},
+					Loopbacks: []string{
 						"192.168.0.4/32",
 						"2001:db8:192:168::4/128",
 					},

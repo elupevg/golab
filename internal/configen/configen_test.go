@@ -16,7 +16,7 @@ import (
 
 const testYAML = `
 name: "triangle"
-generate_configs: true
+manage_configs: true
 ip_start_from:
   links:
     - 100.64.1.0/24

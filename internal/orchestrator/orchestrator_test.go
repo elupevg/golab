@@ -10,7 +10,7 @@ import (
 )
 
 const testYAML = `
-generate_configs: true
+manage_configs: true
 nodes:
   frr01:
     image: "quay.io/frrouting/frr:master"
