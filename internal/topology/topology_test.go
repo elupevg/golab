@@ -39,13 +39,13 @@ func TestFromYAML(t *testing.T) {
                             loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
                             enable: [isis, ldp]
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                             name: "ptp1"
                             ip_subnets: [100.64.1.0/29, 2001:db8:1::/64]
-                          - endpoints: ["frr01:eth1", "frr03:eth0"]
+                          - endpoints: ["frr01", "frr03"]
                             name: "ptp2"
                             ip_subnets: [100.64.2.0/29, 2001:db8:2::/64]
-                          - endpoints: ["frr02:eth1", "frr03:eth1"]
+                          - endpoints: ["frr02", "frr03"]
                             name: "ptp3"
                             ip_subnets: [100.64.3.0/29, 2001:db8:3::/64]
                         `,
@@ -187,7 +187,7 @@ func TestFromYAML(t *testing.T) {
 				},
 				Links: []*topology.Link{
 					{
-						Endpoints:  []string{"frr01:eth0", "frr02:eth0"},
+						Endpoints:  []string{"frr01", "frr02"},
 						Name:       "ptp1",
 						RawSubnets: []string{"100.64.1.0/29", "2001:db8:1::/64"},
 						Subnets: []*net.IPNet{
@@ -206,7 +206,7 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					{
-						Endpoints:  []string{"frr01:eth1", "frr03:eth0"},
+						Endpoints:  []string{"frr01", "frr03"},
 						Name:       "ptp2",
 						RawSubnets: []string{"100.64.2.0/29", "2001:db8:2::/64"},
 						Subnets: []*net.IPNet{
@@ -225,7 +225,7 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					{
-						Endpoints:  []string{"frr02:eth1", "frr03:eth1"},
+						Endpoints:  []string{"frr02", "frr03"},
 						Name:       "ptp3",
 						RawSubnets: []string{"100.64.3.0/29", "2001:db8:3::/64"},
 						Subnets: []*net.IPNet{
@@ -261,8 +261,8 @@ func TestFromYAML(t *testing.T) {
                           isp2:
                             image: "ceos:4.32.0F"
                         links:
-                          - endpoints: ["isp1:eth0", "router:eth0"]
-                          - endpoints: ["isp2:eth0", "router:eth1"]
+                          - endpoints: ["isp1", "router"]
+                          - endpoints: ["isp2", "router"]
                         `,
 			want: &topology.Topology{
 				Name: "multihome",
@@ -349,7 +349,7 @@ func TestFromYAML(t *testing.T) {
 				},
 				Links: []*topology.Link{
 					{
-						Endpoints:  []string{"isp1:eth0", "router:eth0"},
+						Endpoints:  []string{"isp1", "router"},
 						Name:       "golab-link-1",
 						RawSubnets: []string{"100.64.0.0/29", "2001:db8::/64"},
 						Subnets: []*net.IPNet{
@@ -368,7 +368,7 @@ func TestFromYAML(t *testing.T) {
 						},
 					},
 					{
-						Endpoints:  []string{"isp2:eth0", "router:eth1"},
+						Endpoints:  []string{"isp2", "router"},
 						Name:       "golab-link-2",
 						RawSubnets: []string{"100.64.0.8/29", "2001:db8:0:1::/64"},
 						Subnets: []*net.IPNet{
@@ -420,7 +420,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrCorruptYAML,
 		},
@@ -438,7 +438,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr01:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0"]
+                          - endpoints: ["frr01"]
                         `,
 			err: topology.ErrTooFewEndpoints,
 		},
@@ -450,7 +450,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrMissingImage,
 		},
@@ -463,39 +463,9 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrMissingImage,
-		},
-		{
-			name: "InvalidEndpoint",
-			data: `
-                        ip_start_from:
-                           links: ["100.64.0.0/29"]
-                        nodes:
-                          frr11:
-                            image: "quay.io/frrouting/frr:master"
-                          frr12:
-                            image: "quay.io/frrouting/frr:master"
-                        links:
-                          - endpoints: ["frr11:eth0", "frr12-eth1"]
-                        `,
-			err: topology.ErrInvalidEndpoint,
-		},
-		{
-			name: "InvalidInterface",
-			data: `
-                        ip_start_from:
-                           links: ["100.64.0.0/29"]
-                        nodes:
-                          frr01:
-                            image: "quay.io/frrouting/frr:master"
-                          frr02:
-                            image: "quay.io/frrouting/frr:master"
-                        links:
-                          - endpoints: ["frr01:eth0", "frr02:xe-0/0/0"]
-                        `,
-			err: topology.ErrInvalidInterface,
 		},
 		{
 			name: "UnknownNode",
@@ -508,7 +478,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr03:eth0"]
+                          - endpoints: ["frr01", "frr03"]
                         `,
 			err: topology.ErrUnknownNode,
 		},
@@ -521,7 +491,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                             ip_subnets: [256.0.0.0/29]
                         `,
 			err: topology.ErrInvalidCIDR,
@@ -535,7 +505,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                             ip_subnets: [2001:g::/64]
                         `,
 			err: topology.ErrInvalidCIDR,
@@ -549,7 +519,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                             ip_subnets: [100.64.0.0/31]
                         `,
 			err: topology.ErrSubnetExhausted,
@@ -563,7 +533,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                             ip_subnets: [2001:db8::/127]
                         `,
 			err: topology.ErrSubnetExhausted,
@@ -597,7 +567,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrMissingSubnets,
 		},
@@ -612,7 +582,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrInvalidCIDR,
 		},
@@ -638,7 +608,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrInvalidCIDR,
 		},
@@ -654,7 +624,7 @@ func TestFromYAML_Errors(t *testing.T) {
                           frr02:
                             image: "quay.io/frrouting/frr:master"
                         links:
-                          - endpoints: ["frr01:eth0", "frr02:eth0"]
+                          - endpoints: ["frr01", "frr02"]
                         `,
 			err: topology.ErrUnknownProtocol,
 		},

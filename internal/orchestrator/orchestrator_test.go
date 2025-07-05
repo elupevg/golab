@@ -19,9 +19,9 @@ nodes:
   frr03:
     image: "quay.io/frrouting/frr:master"
 links:
-  - endpoints: ["frr01:eth1", "frr02:eth1"]
+  - endpoints: ["frr01", "frr02"]
     ip_subnets: [100.64.1.0/29]
-  - endpoints: ["frr01:eth2", "frr03:eth1"]
+  - endpoints: ["frr01", "frr03"]
     ip_subnets: [100.64.2.0/29]
 `
 

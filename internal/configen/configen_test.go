@@ -28,12 +28,14 @@ nodes:
     enable: [ospf, ospf6]
   frr02:
     image: "quay.io/frrouting/frr:master"
+    loopbacks: [192.168.0.2/32, 2001:db8:192:168::2/128]
   frr03:
     image: "quay.io/frrouting/frr:master"
+    loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
 links:
-  - endpoints: ["frr01:eth0", "frr02:eth0"]
-  - endpoints: ["frr01:eth1", "frr03:eth0"]
-  - endpoints: ["frr02:eth1", "frr03:eth1"]
+  - endpoints: ["frr01", "frr02"]
+  - endpoints: ["frr01", "frr03"]
+  - endpoints: ["frr02", "frr03"]
 `
 
 //go:embed testdata

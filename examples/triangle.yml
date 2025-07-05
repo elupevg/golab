@@ -1,0 +1,19 @@
+name: triangle
+ip_start_from:
+  links:
+    - 100.64.1.0/24
+    - 2001:db8:64:1::/64
+nodes:
+  R1:
+    image: "quay.io/frrouting/frr:master"
+    binds: ["R1:/etc/frr"]
+  R2:
+    image: "quay.io/frrouting/frr:master"
+    binds: ["R2:/etc/frr"]
+  R3:
+    image: "quay.io/frrouting/frr:master"
+    binds: ["R3:/etc/frr"]
+links:
+  - endpoints: [R1, R2]
+  - endpoints: [R2, R3]
+  - endpoints: [R3, R1]

@@ -208,20 +208,9 @@ func (topo *Topology) populateLinks() error {
 			return fmt.Errorf("%w: %s", ErrTooFewEndpoints, link.Name)
 		}
 		for j, ep := range link.Endpoints {
-			// validate endpoint string format
-			parts := strings.Split(ep, ":")
-			if len(parts) != 2 {
-				return fmt.Errorf("%w: %q", ErrInvalidEndpoint, ep)
-			}
-			// map an endpoint to a node
-			nodeName, iface := parts[0], parts[1]
-			node, ok := topo.Nodes[nodeName]
+			node, ok := topo.Nodes[ep]
 			if !ok {
-				return fmt.Errorf("%w: %q in %q", ErrUnknownNode, nodeName, ep)
-			}
-			// validate interface name
-			if !strings.HasPrefix(iface, "eth") {
-				return fmt.Errorf("%w: %q in %q", ErrInvalidInterface, iface, ep)
+				return fmt.Errorf("%w: %q", ErrUnknownNode, ep)
 			}
 			var ipv4Addr, ipv6Addr string
 			for _, subnet := range link.Subnets {
@@ -238,7 +227,7 @@ func (topo *Topology) populateLinks() error {
 				}
 			}
 			node.Interfaces = append(node.Interfaces, &Interface{
-				Name: iface,
+				Name: "eth" + strconv.Itoa(len(node.Interfaces)-1),
 				Link: link.Name,
 				IPv4: ipv4Addr,
 				IPv6: ipv6Addr,
