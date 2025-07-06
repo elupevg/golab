@@ -61,12 +61,12 @@ func (n *Node) validate(name string) error {
 		}
 	}
 	for _, loop := range n.IPv4Loopbacks {
-		if !isValidIPv4Addr(loop) {
+		if !isValidCIDR(loop, 4) {
 			return fmt.Errorf("%q is not a valid IPv4 address", loop)
 		}
 	}
 	for _, loop := range n.IPv6Loopbacks {
-		if !isValidIPv6Addr(loop) {
+		if !isValidCIDR(loop, 6) {
 			return fmt.Errorf("%q is not a valid IPv6 address", loop)
 		}
 	}
@@ -93,20 +93,19 @@ func isCompliant(name string) bool {
 	return num > 0 && num < 256
 }
 
-func isValidIPv4Addr(addr string) bool {
-	ip, _, err := net.ParseCIDR(addr)
+// isValidCIDR tells if the provided string is a valid IP address in CIDR notation.
+func isValidCIDR(s string, ipVersion int) bool {
+	ip, _, err := net.ParseCIDR(s)
 	if err != nil {
 		return false
 	}
-	return ip.To4() != nil
-}
-
-func isValidIPv6Addr(addr string) bool {
-	ip, _, err := net.ParseCIDR(addr)
-	if err != nil {
-		return false
+	switch ipVersion {
+	case 4:
+		return ip.To4() != nil
+	case 6:
+		return ip.To4() == nil
 	}
-	return ip.To4() == nil
+	return false
 }
 
 func validateBind(bind string) error {
@@ -129,10 +128,10 @@ func (l *Link) validate(nodes []string) error {
 			return fmt.Errorf("unknown node %q in endpoints %v", ep, l.Endpoints)
 		}
 	}
-	if l.IPv4Subnet != "" && !isValidIPv4Addr(l.IPv4Subnet) {
+	if l.IPv4Subnet != "" && !isValidCIDR(l.IPv4Subnet, 4) {
 		return fmt.Errorf("%q is not a valid IPv4 subnet", l.IPv4Subnet)
 	}
-	if l.IPv6Subnet != "" && !isValidIPv6Addr(l.IPv6Subnet) {
+	if l.IPv6Subnet != "" && !isValidCIDR(l.IPv6Subnet, 6) {
 		return fmt.Errorf("%q is not a valid IPv6 subnet", l.IPv6Subnet)
 	}
 	return nil
