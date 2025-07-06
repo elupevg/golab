@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"strconv"
 	"testing"
 
@@ -122,21 +121,11 @@ func TestLinkCreateRemove(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Name: "golab-link-1",
-		Subnets: []*net.IPNet{
-			{
-				IP:   net.ParseIP("100.11.0.0"),
-				Mask: net.CIDRMask(29, 32),
-			},
-			{
-				IP:   net.ParseIP("2001:db8:11::"),
-				Mask: net.CIDRMask(64, 128),
-			},
-		},
-		Gateways: []net.IP{
-			net.ParseIP("100.11.0.6"),
-			net.ParseIP("2001:db8:11::ffff:ffff:ffff:fffe"),
-		},
+		Name:        "golab-link-1",
+		IPv4Subnet:  "100.11.0.0/24",
+		IPv6Subnet:  "2001:db8:11::/64",
+		IPv4Gateway: "100.11.0.254",
+		IPv6Gateway: "2001:db8:11::254",
 	}
 	// link creation
 	err := dp.LinkCreate(ctx, link)
@@ -199,13 +188,9 @@ func TestLinkCreateError(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Subnets: []*net.IPNet{
-			{
-				IP:   net.ParseIP("100.11.0.0"),
-				Mask: net.CIDRMask(29, 32),
-			},
-		},
-		Gateways: []net.IP{net.ParseIP("100.11.0.6")},
+		Name:        "golab-link-1",
+		IPv4Subnet:  "100.11.0.0/24",
+		IPv4Gateway: "100.11.0.254",
 	}
 	// network list error
 	wantErr := errors.New("failed to list networks")
@@ -230,14 +215,9 @@ func TestLinkRemoveErrors(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Name: "golab-link-1",
-		Subnets: []*net.IPNet{
-			{
-				IP:   net.ParseIP("100.11.0.0"),
-				Mask: net.CIDRMask(29, 32),
-			},
-		},
-		Gateways: []net.IP{net.ParseIP("100.11.0.6")},
+		Name:        "golab-link-1",
+		IPv4Subnet:  "100.11.0.0/24",
+		IPv4Gateway: "100.11.0.254",
 	}
 	// create test network
 	err := dp.LinkCreate(ctx, link)
@@ -272,15 +252,10 @@ func TestNodeCreateRemove(t *testing.T) {
 		Binds: []string{"/lib/modules:/lib/modules"},
 		Interfaces: []*topology.Interface{
 			{
-				Name: "lo",
-				IPv4: "192.168.0.1/32",
-				IPv6: "2001:db8:192:168::1/128",
-			},
-			{
-				Name: "eth0",
-				Link: "golab-link-1",
-				IPv4: "100.64.0.1/29",
-				IPv6: "2001:db8:64::1/64",
+				Name:     "eth0",
+				Link:     "golab-link-1",
+				IPv4Addr: "100.64.0.1/29",
+				IPv6Addr: "2001:db8:64::1/64",
 			},
 		},
 	}

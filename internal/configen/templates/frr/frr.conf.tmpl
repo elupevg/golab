@@ -2,39 +2,48 @@ frr defaults traditional
 hostname {{.Name}}
 service integrated-vtysh-config
 !
+interface lo
+{{- range .IPv4Loopbacks }}
+ ip address {{.}}
+{{- end }}
+{{- if .Protocols.ospf }}
+ ip ospf area 0
+ ip ospf passive
+{{- end }}
+{{- range .IPv6Loopbacks }}
+ ipv6 address {{.}}
+{{- end }}
+{{- if .Protocols.ospf6 }}
+ ipv6 ospf6 area 0
+ ipv6 ospf6 passive
+{{- end }}
+exit
+!
 {{- range .Interfaces }}
 interface {{.Name}}
-{{- if .IPv4 }}
- ip address {{.IPv4}}
+{{- if .IPv4Addr }}
+ ip address {{.IPv4Addr}}
 {{- end }}
-{{- if eq "yes" $.Protocols.ospf }}
+{{- if $.Protocols.ospf }}
  ip ospf area 0
-{{- if eq "lo" .Name }}
- ip ospf passive
-{{- else }}
  ip ospf network point-to-point
 {{- end }}
+{{- if .IPv6Addr }}
+ ipv6 address {{.IPv6Addr}}
 {{- end }}
-{{- if .IPv6 }}
- ipv6 address {{.IPv6}}
-{{- end }}
-{{- if eq "yes" $.Protocols.ospf6 }}
+{{- if $.Protocols.ospf6 }}
  ipv6 ospf6 area 0
-{{- if eq "lo" .Name }}
- ipv6 ospf6 passive
-{{- else }}
  ipv6 ospf6 network point-to-point
-{{- end }}
 {{- end }}
 exit
 !
 {{- end }}
-{{- if eq .Protocols.ospf "yes" }}
+{{- if .Protocols.ospf }}
 router ospf
 exit
 !
 {{- end }}
-{{- if eq .Protocols.ospf6 "yes" }}
+{{- if .Protocols.ospf6 }}
 router ospf6
 exit
 !

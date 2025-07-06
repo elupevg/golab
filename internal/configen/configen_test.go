@@ -15,27 +15,20 @@ import (
 )
 
 const testYAML = `
-name: "triangle"
+name: triangle
 manage_configs: true
-ip_start_from:
-  links:
-    - 100.64.1.0/24
-    - 2001:db8:64:1::/64
 nodes:
-  frr01:
+  R1:
     image: "quay.io/frrouting/frr:master"
-    loopbacks: [192.168.0.1/32, 2001:db8:192:168::1/128]
-    enable: [ospf, ospf6]
-  frr02:
+    protocols: {ospf: true, ospf6: true}
+  R2:
     image: "quay.io/frrouting/frr:master"
-    loopbacks: [192.168.0.2/32, 2001:db8:192:168::2/128]
-  frr03:
+  R3:
     image: "quay.io/frrouting/frr:master"
-    loopbacks: [192.168.0.3/32, 2001:db8:192:168::3/128]
 links:
-  - endpoints: ["frr01", "frr02"]
-  - endpoints: ["frr01", "frr03"]
-  - endpoints: ["frr02", "frr03"]
+  - endpoints: [R1, R2]
+  - endpoints: [R1, R3]
+  - endpoints: [R2, R3]
 `
 
 //go:embed testdata

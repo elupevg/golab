@@ -10,19 +10,18 @@ import (
 )
 
 const testYAML = `
+name: example
 manage_configs: true
 nodes:
-  frr01:
+  R1:
     image: "quay.io/frrouting/frr:master"
-  frr02:
+  R2:
     image: "quay.io/frrouting/frr:master"
-  frr03:
+  R3:
     image: "quay.io/frrouting/frr:master"
 links:
-  - endpoints: ["frr01", "frr02"]
-    ip_subnets: [100.64.1.0/29]
-  - endpoints: ["frr01", "frr03"]
-    ip_subnets: [100.64.2.0/29]
+  - endpoints: [R1, R2]
+  - endpoints: [R1, R3]
 `
 
 type stubVirtProvider struct {
@@ -128,17 +127,27 @@ func TestBuildNodeError(t *testing.T) {
 
 func TestBuildCorruptYAMLError(t *testing.T) {
 	t.Parallel()
+	wantMsg := "[1:1] string was used where mapping is expected\n>  1 | name\n       ^\n"
 	err := orchestrator.Build(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
-	if !errors.Is(err, topology.ErrCorruptYAML) {
-		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
+	if wantMsg != errMsg {
+		t.Errorf("error: want %q, got %q", wantMsg, errMsg)
 	}
 }
 
 func TestWreckCorruptYAMLError(t *testing.T) {
 	t.Parallel()
+	wantMsg := "[1:1] string was used where mapping is expected\n>  1 | name\n       ^\n"
 	err := orchestrator.Wreck(context.Background(), []byte(`name`), new(stubVirtProvider), new(stubConfProvider))
-	if !errors.Is(err, topology.ErrCorruptYAML) {
-		t.Errorf("error: want %q, got %q", topology.ErrCorruptYAML, err)
+	var errMsg string
+	if err != nil {
+		errMsg = err.Error()
+	}
+	if wantMsg != errMsg {
+		t.Errorf("error: want %q, got %q", wantMsg, errMsg)
 	}
 }
 

@@ -1,12 +1,12 @@
-bgpd={{ .Protocols.bgp }}
-ospfd={{ .Protocols.ospf }}
-ospf6d={{ .Protocols.ospf6 }}
+bgpd={{ if .Protocols.bgp }}yes{{ else }}no{{ end }}
+ospfd={{ if .Protocols.ospf }}yes{{ else }}no{{ end }}
+ospf6d={{ if .Protocols.ospf6 }}yes{{ else }}no{{ end }}
 ripd=no
 ripngd=no
-isisd={{ .Protocols.isis }}
+isisd={{ if .Protocols.isis }}yes{{ else }}no{{ end }}
 pimd=no
 pim6d=no
-ldpd={{ .Protocols.ldp }}
+ldpd={{ if .Protocols.ldp }}yes{{ else }}no{{ end }}
 nhrpd=no
 eigrpd=no
 babeld=no

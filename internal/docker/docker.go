@@ -44,19 +44,20 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	}
 	// Otherwise, create a new Docker network.
 	ipamConfigs := make([]network.IPAMConfig, 0, 2)
-	var enableIPv4, enableIPv6 bool
-	for i, subnet := range link.Subnets {
-		if strings.Contains(subnet.String(), ":") {
-			enableIPv6 = true
-		}
-		if strings.Contains(subnet.String(), ".") {
-			enableIPv4 = true
-		}
+	if link.IPv4Subnet != "" {
 		ipamConfigs = append(ipamConfigs, network.IPAMConfig{
-			Subnet:  subnet.String(),
-			Gateway: link.Gateways[i].String(),
+			Subnet:  link.IPv4Subnet,
+			Gateway: link.IPv4Gateway,
 		})
 	}
+	if link.IPv6Subnet != "" {
+		ipamConfigs = append(ipamConfigs, network.IPAMConfig{
+			Subnet:  link.IPv6Subnet,
+			Gateway: link.IPv6Gateway,
+		})
+	}
+	enableIPv4 := link.IPv4Subnet != ""
+	enableIPv6 := link.IPv6Subnet != ""
 	opts := network.CreateOptions{
 		IPAM:       &network.IPAM{Config: ipamConfigs},
 		Internal:   true, // network is internal to the Docker host.
@@ -67,7 +68,7 @@ func (dp *DockerProvider) LinkCreate(ctx context.Context, link topology.Link) er
 	if err != nil {
 		return err
 	}
-	dp.log.Success(fmt.Sprintf("created docker network %s with subnets=%v, id=%s", link.Name, link.Subnets, string(resp.ID[:12])))
+	dp.log.Success(fmt.Sprintf("created docker network %s with subnets=[%v, %v], id=%s", link.Name, link.IPv4Subnet, link.IPv6Subnet, string(resp.ID[:12])))
 	return nil
 }
 
@@ -137,11 +138,8 @@ func generateMounts(node topology.Node) []mount.Mount {
 func generateNetworkConfig(node topology.Node) *network.NetworkingConfig {
 	endpoints := make(map[string]*network.EndpointSettings, len(node.Interfaces))
 	for _, iface := range node.Interfaces {
-		if iface.Name == "lo" {
-			continue
-		}
-		ipv4Addr, _, _ := strings.Cut(iface.IPv4, "/")
-		ipv6Addr, _, _ := strings.Cut(iface.IPv6, "/")
+		ipv4Addr, _, _ := strings.Cut(iface.IPv4Addr, "/")
+		ipv6Addr, _, _ := strings.Cut(iface.IPv6Addr, "/")
 		endpoints[iface.Link] = &network.EndpointSettings{
 			IPAMConfig: &network.EndpointIPAMConfig{
 				IPv4Address: ipv4Addr,
