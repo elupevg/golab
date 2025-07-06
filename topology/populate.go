@@ -3,8 +3,6 @@ package topology
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -15,7 +13,7 @@ const mplsLabels = 100_000
 
 func (t *Topology) populate() error {
 	for name, node := range t.Nodes {
-		if err := node.populate(name); err != nil {
+		if err := node.populate(name, t.ConfigMode); err != nil {
 			return err
 		}
 	}
@@ -27,26 +25,18 @@ func (t *Topology) populate() error {
 	return nil
 }
 
-// populateBinds validates/fixes user provided binds and adds vendor-specific ones.
-func (n *Node) populateBinds() {
-	binds := make([]string, 0)
-	extraBinds := vendors.ExtraBinds(n.Vendor)
-	for _, bind := range n.Binds {
-		paths := strings.Split(bind, ":")
-		if !filepath.IsAbs(paths[0]) {
-			// convert relative source path to absolute (UNIX only)
-			paths[0] = filepath.Join(os.Getenv("PWD"), paths[0])
-		}
-		bind = strings.Join(paths, ":")
-		if slices.Contains(extraBinds, bind) {
-			continue
-		}
-		binds = append(binds, bind)
+// populateBinds adds vendor-specific bind mounts.
+func (n *Node) populateBinds(configMode ConfigMode, vendorConfig vendors.Config) {
+	n.Binds = append(n.Binds, vendorConfig.ExtraBinds...)
+	if configMode == None {
+		return
 	}
-	n.Binds = append(binds, extraBinds...)
+	configBind := fmt.Sprintf("%s/%s:%s", os.Getenv("PWD"), n.Name, vendorConfig.ConfigPath)
+	n.Binds = append(n.Binds, configBind)
 }
 
-func (n *Node) populate(name string) error {
+// populate autofills missing fields in a Node struct.
+func (n *Node) populate(name string, configMode ConfigMode) error {
 	n.Name = name
 	n.Vendor = vendors.DetectByImage(n.Image)
 	if len(n.IPv4Loopbacks) == 0 {
@@ -61,7 +51,8 @@ func (n *Node) populate(name string) error {
 			"net.mpls.conf.lo.input":   "1",
 		}
 	}
-	n.populateBinds()
+	vendorConfig := vendors.GetConfig(n.Vendor)
+	n.populateBinds(configMode, vendorConfig)
 	return nil
 }
 

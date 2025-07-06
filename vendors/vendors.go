@@ -1,61 +1,50 @@
-// Package vendors provides vendor-specific customization tools.
+// Package vendors provides vendor-specific configuration for network nodes.
 package vendors
 
 import "strings"
 
 // Vendor represents a virtual network node vendor.
-type Vendor int
+type Vendor string
 
 const (
-	UNKNOWN Vendor = iota
-	FRR
-	ARISTA
+	UNKNOWN Vendor = ""
+	FRR     Vendor = "frr"
 )
 
-// String returns a string representation of the vendor name.
-func (v Vendor) String() string {
-	return []string{"unknown", "frr", "arista"}[int(v)]
+// Config represents vendor-specific configuration for a node.
+type Config struct {
+	ImageSubstr string
+	ConfigPath  string
+	ConfigFiles []string
+	ExtraBinds  []string
 }
 
-// bindsByVendor stores collections of mandatory binds for Docker by vendor.
-var bindsByVendor = map[Vendor][]string{
-	FRR: {"/lib/modules:/lib/modules"},
-}
-
-// configFilesByVendor stores collections of mandatory configuration files by vendor.
-var configFilesByVendor = map[Vendor][]string{
+var configByVendor = map[Vendor]Config{
 	FRR: {
-		"/etc/frr/daemons",
-		"/etc/frr/vtysh.conf",
-		"/etc/frr/frr.conf",
+		ImageSubstr: "frr",
+		ConfigPath:  "/etc/frr",
+		ConfigFiles: []string{
+			"/etc/frr/daemons",
+			"/etc/frr/vtysh.conf",
+			"/etc/frr/frr.conf",
+		},
+		ExtraBinds: []string{
+			"/lib/modules:/lib/modules",
+		},
 	},
 }
 
 // DetectByImage attempts to detect a node vendor based on the container image name.
 func DetectByImage(image string) Vendor {
-	if strings.Contains(image, "frr") {
-		return FRR
-	}
-	if strings.Contains(image, "ceos") {
-		return ARISTA
+	for vendor, config := range configByVendor {
+		if strings.Contains(image, config.ImageSubstr) {
+			return vendor
+		}
 	}
 	return UNKNOWN
 }
 
-// ExtraBinds returns a collection of mandatory binds for the specific vendor.
-func ExtraBinds(v Vendor) []string {
-	binds, ok := bindsByVendor[v]
-	if !ok {
-		return []string{}
-	}
-	return binds
-}
-
-// ConfigFiles returns mandatory configuration file paths for the specific vendor.
-func ConfigFiles(v Vendor) []string {
-	files, ok := configFilesByVendor[v]
-	if !ok {
-		return []string{}
-	}
-	return files
+// GetConfig provides vendor-specific configuration.
+func GetConfig(v Vendor) Config {
+	return configByVendor[v]
 }

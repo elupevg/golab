@@ -12,14 +12,13 @@ func TestFromYAML(t *testing.T) {
 	t.Parallel()
 	testYAML := `
 name: triangle
+config_mode: manual
 nodes:
   R1:
     image: "quay.io/frrouting/frr:master"
-    binds: ["/lib/modules:/lib/modules"]
     protocols: {ldp: true}
   R2:
     image: "quay.io/frrouting/frr:master"
-    binds: ["R2:/etc/frr"]
     protocols: {ospf: true, bgp: true}
     asn: 65000
   R3:
@@ -35,12 +34,16 @@ links:
 `
 	var testASN uint32 = 65000
 	want := &Topology{
-		Name: "triangle",
+		Name:       "triangle",
+		ConfigMode: "manual",
 		Nodes: map[string]*Node{
 			"R1": {
-				Name:   "R1",
-				Image:  "quay.io/frrouting/frr:master",
-				Binds:  []string{"/lib/modules:/lib/modules"},
+				Name:  "R1",
+				Image: "quay.io/frrouting/frr:master",
+				Binds: []string{
+					"/lib/modules:/lib/modules",
+					os.Getenv("PWD") + "/R1:/etc/frr",
+				},
 				Vendor: vendors.FRR,
 				Interfaces: []*Interface{
 					{
@@ -71,8 +74,8 @@ links:
 				Name:  "R2",
 				Image: "quay.io/frrouting/frr:master",
 				Binds: []string{
-					os.Getenv("PWD") + "/R2:/etc/frr",
 					"/lib/modules:/lib/modules",
+					os.Getenv("PWD") + "/R2:/etc/frr",
 				},
 				Vendor: vendors.FRR,
 				Interfaces: []*Interface{
@@ -93,9 +96,12 @@ links:
 				ASN:           &testASN,
 			},
 			"R3": {
-				Name:   "R3",
-				Image:  "quay.io/frrouting/frr:master",
-				Binds:  []string{"/lib/modules:/lib/modules"},
+				Name:  "R3",
+				Image: "quay.io/frrouting/frr:master",
+				Binds: []string{
+					"/lib/modules:/lib/modules",
+					os.Getenv("PWD") + "/R3:/etc/frr",
+				},
 				Vendor: vendors.FRR,
 				Interfaces: []*Interface{
 					{

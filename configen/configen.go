@@ -40,10 +40,10 @@ func (cp *ConfigenProvider) GenerateAndDump(topo *topology.Topology, rootDir str
 			return err
 		}
 		var remoteDir, fileName string
-		for _, path := range vendors.ConfigFiles(node.Vendor) {
+		for _, path := range vendors.GetConfig(node.Vendor).ConfigFiles {
 			remoteDir, fileName = filepath.Split(path)
 			// prepare a template
-			tmplData, err := configTemplates.ReadFile(filepath.Join("templates", node.Vendor.String(), fileName+".tmpl"))
+			tmplData, err := configTemplates.ReadFile(filepath.Join("templates", string(node.Vendor), fileName+".tmpl"))
 			if err != nil {
 				return err
 			}

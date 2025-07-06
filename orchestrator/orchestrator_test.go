@@ -11,7 +11,7 @@ import (
 
 const testYAML = `
 name: example
-manage_configs: true
+config_mode: auto
 nodes:
   R1:
     image: "quay.io/frrouting/frr:master"

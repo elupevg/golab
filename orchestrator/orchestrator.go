@@ -31,7 +31,7 @@ func Build(ctx context.Context, data []byte, vp VirtProvider, cp ConfProvider) e
 	if err != nil {
 		return err
 	}
-	if topo.ManageConfigs {
+	if topo.ConfigMode == topology.Auto {
 		err := cp.GenerateAndDump(topo, os.Getenv("PWD"))
 		if err != nil {
 			return err
@@ -70,7 +70,7 @@ func Wreck(ctx context.Context, data []byte, vp VirtProvider, cp ConfProvider) e
 			return err
 		}
 	}
-	if topo.ManageConfigs {
+	if topo.ConfigMode == topology.Auto {
 		err := cp.Cleanup(topo, os.Getenv("PWD"))
 		if err != nil {
 			return err

@@ -4,11 +4,19 @@ import (
 	"github.com/elupevg/golab/vendors"
 )
 
+type ConfigMode string
+
+const (
+	None   ConfigMode = ""
+	Manual ConfigMode = "manual"
+	Auto   ConfigMode = "auto"
+)
+
 type Topology struct {
-	Name          string           `yaml:"name"`
-	Nodes         map[string]*Node `yaml:"nodes"`
-	Links         []*Link          `yaml:"links"`
-	ManageConfigs bool             `yaml:"manage_configs"`
+	Name       string           `yaml:"name"`
+	Nodes      map[string]*Node `yaml:"nodes"`
+	Links      []*Link          `yaml:"links"`
+	ConfigMode ConfigMode       `yaml:"config_mode"`
 }
 
 type Node struct {

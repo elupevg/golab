@@ -22,10 +22,10 @@ func TestDetectByImage(t *testing.T) {
 		{
 			name:  "Arista",
 			image: "ceos:4.32.0F",
-			want:  vendors.ARISTA,
+			want:  vendors.UNKNOWN,
 		},
 		{
-			name:  "Unknown",
+			name:  "Juniper",
 			image: "crpd:20.2R1.10",
 			want:  vendors.UNKNOWN,
 		},
@@ -34,100 +34,46 @@ func TestDetectByImage(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := vendors.DetectByImage(tc.image)
 			if tc.want != got {
-				t.Errorf("want %d, got %d", tc.want, got)
+				t.Errorf("want %v, got %v", tc.want, got)
 			}
 		})
 	}
 }
 
-func TestExtraBinds(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		name   string
 		vendor vendors.Vendor
-		want   []string
+		want   vendors.Config
 	}{
 		{
 			name:   "FRRouting",
 			vendor: vendors.FRR,
-			want:   []string{"/lib/modules:/lib/modules"},
-		},
-		{
-			name:   "Unknown",
-			vendor: vendors.UNKNOWN,
-			want:   []string{},
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := vendors.ExtraBinds(tc.vendor)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Error(diff)
-			}
-		})
-	}
-}
-
-func TestConfigFiles(t *testing.T) {
-	t.Parallel()
-	testCases := []struct {
-		name   string
-		vendor vendors.Vendor
-		want   []string
-	}{
-		{
-			name:   "FRRouting",
-			vendor: vendors.FRR,
-			want: []string{
-				"/etc/frr/daemons",
-				"/etc/frr/vtysh.conf",
-				"/etc/frr/frr.conf",
+			want: vendors.Config{
+				ImageSubstr: "frr",
+				ConfigPath:  "/etc/frr",
+				ConfigFiles: []string{
+					"/etc/frr/daemons",
+					"/etc/frr/vtysh.conf",
+					"/etc/frr/frr.conf",
+				},
+				ExtraBinds: []string{
+					"/lib/modules:/lib/modules",
+				},
 			},
 		},
 		{
 			name:   "Unknown",
 			vendor: vendors.UNKNOWN,
-			want:   []string{},
+			want:   vendors.Config{},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := vendors.ConfigFiles(tc.vendor)
+			got := vendors.GetConfig(tc.vendor)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Error(diff)
-			}
-		})
-	}
-}
-
-func TestString(t *testing.T) {
-	t.Parallel()
-	testCases := []struct {
-		name   string
-		vendor vendors.Vendor
-		want   string
-	}{
-		{
-			name:   "FRRouting",
-			vendor: vendors.FRR,
-			want:   "frr",
-		},
-		{
-			name:   "Arista",
-			vendor: vendors.ARISTA,
-			want:   "arista",
-		},
-		{
-			name:   "Unknown",
-			vendor: vendors.UNKNOWN,
-			want:   "unknown",
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.vendor.String()
-			if tc.want != got {
-				t.Errorf("want %q, got %q", tc.want, got)
 			}
 		})
 	}

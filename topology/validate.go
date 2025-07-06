@@ -22,6 +22,9 @@ func (t *Topology) validate() error {
 	if t.Name == "" {
 		return errors.New("topology does not have a name")
 	}
+	if !t.ConfigMode.isValid() {
+		return fmt.Errorf("topology %q has invalid config mode %q", t.Name, t.ConfigMode)
+	}
 	if len(t.Nodes) == 0 {
 		return fmt.Errorf("topology %q has no nodes", t.Name)
 	}
@@ -133,4 +136,13 @@ func (l *Link) validate(nodes []string) error {
 		return fmt.Errorf("%q is not a valid IPv6 subnet", l.IPv6Subnet)
 	}
 	return nil
+}
+
+func (cm ConfigMode) isValid() bool {
+	switch cm {
+	case None, Manual, Auto:
+		return true
+	default:
+		return false
+	}
 }
