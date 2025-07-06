@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elupevg/golab/internal/vendors"
+	"github.com/elupevg/golab/vendors"
 )
 
 const mplsLabels = 100_000

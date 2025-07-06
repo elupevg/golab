@@ -1,7 +1,7 @@
 package topology
 
 import (
-	"github.com/elupevg/golab/internal/vendors"
+	"github.com/elupevg/golab/vendors"
 )
 
 type Topology struct {

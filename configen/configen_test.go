@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/elupevg/golab/internal/configen"
-	"github.com/elupevg/golab/internal/logger"
-	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/configen"
+	"github.com/elupevg/golab/logger"
+	"github.com/elupevg/golab/topology"
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -11,9 +11,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/elupevg/golab/internal/docker"
-	"github.com/elupevg/golab/internal/logger"
-	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/docker"
+	"github.com/elupevg/golab/logger"
+	"github.com/elupevg/golab/topology"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 

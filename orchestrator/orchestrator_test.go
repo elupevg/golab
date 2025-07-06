@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/elupevg/golab/internal/orchestrator"
-	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/orchestrator"
+	"github.com/elupevg/golab/topology"
 )
 
 const testYAML = `

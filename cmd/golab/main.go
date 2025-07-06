@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/docker/docker/client"
-	"github.com/elupevg/golab/internal/configen"
-	"github.com/elupevg/golab/internal/docker"
-	"github.com/elupevg/golab/internal/logger"
-	"github.com/elupevg/golab/internal/orchestrator"
+	"github.com/elupevg/golab/configen"
+	"github.com/elupevg/golab/docker"
+	"github.com/elupevg/golab/logger"
+	"github.com/elupevg/golab/orchestrator"
 )
 
 const usage = "Usage:\n  golab build\n  golab wreck"

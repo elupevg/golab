@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/elupevg/golab/internal/logger"
+	"github.com/elupevg/golab/logger"
 )
 
 func TestLoggerSuccess(t *testing.T) {

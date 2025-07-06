@@ -3,7 +3,6 @@ module github.com/elupevg/golab
 go 1.24.3
 
 require (
-	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/docker/docker v28.2.2+incompatible
 	github.com/goccy/go-yaml v1.18.0
 	github.com/google/go-cmp v0.7.0

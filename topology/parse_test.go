@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/elupevg/golab/internal/vendors"
+	"github.com/elupevg/golab/vendors"
 	"github.com/google/go-cmp/cmp"
 )
 

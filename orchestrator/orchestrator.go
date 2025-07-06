@@ -5,7 +5,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/elupevg/golab/internal/topology"
+	"github.com/elupevg/golab/topology"
 )
 
 // VirtProvider represents a virtualization provider and its methods (e.g. Docker).

@@ -17,7 +17,7 @@ build:
 
 .PHONY: test
 test:
-	@go test -cover ./internal/...
+	@go test -cover ./...
 
 .PHONY: clean
 clean:
