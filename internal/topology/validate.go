@@ -72,6 +72,9 @@ func (n *Node) validate(name string) error {
 			return fmt.Errorf("node %q has unsupported protocol %q", name, proto)
 		}
 	}
+	if n.ASN != nil && *(n.ASN) == 0 {
+		return fmt.Errorf("node %q has unvalid ASN %d", name, *(n.ASN))
+	}
 	return nil
 }
 

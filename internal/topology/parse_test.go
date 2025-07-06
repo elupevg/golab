@@ -20,10 +20,10 @@ nodes:
   R2:
     image: "quay.io/frrouting/frr:master"
     binds: ["R2:/etc/frr"]
-    protocols: {ospf: true}
+    protocols: {ospf: true, bgp: true}
+    asn: 65000
   R3:
     image: "quay.io/frrouting/frr:master"
-    protocols: {bgp: true}
     ipv4_loopbacks: [172.16.0.3/32, 203.0.113.3/24]
     ipv6_loopbacks: [2001:db8:172:16::3/128, 2001:db8:203:113::3/64]
 links:
@@ -33,6 +33,7 @@ links:
     ipv4_subnet: 100.64.0.0/24
     ipv6_subnet: 2001:db8:64::/64
 `
+	var testASN uint32 = 65000
 	want := &Topology{
 		Name: "triangle",
 		Nodes: map[string]*Node{
@@ -88,7 +89,8 @@ links:
 				},
 				IPv4Loopbacks: []string{"192.168.0.2/32"},
 				IPv6Loopbacks: []string{"2001:db8::2/128"},
-				Protocols:     map[string]bool{"ospf": true},
+				Protocols:     map[string]bool{"ospf": true, "bgp": true},
+				ASN:           &testASN,
 			},
 			"R3": {
 				Name:   "R3",
@@ -115,7 +117,6 @@ links:
 					"2001:db8:172:16::3/128",
 					"2001:db8:203:113::3/64",
 				},
-				Protocols: map[string]bool{"bgp": true},
 			},
 		},
 		Links: []*Link{

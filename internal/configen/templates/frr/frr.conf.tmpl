@@ -48,3 +48,8 @@ router ospf6
 exit
 !
 {{- end }}
+{{- if and .Protocols.bgp .ASN }}
+router bgp {{.ASN}}
+exit
+!
+{{- end }}

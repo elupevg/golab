@@ -20,11 +20,13 @@ manage_configs: true
 nodes:
   R1:
     image: "quay.io/frrouting/frr:master"
-    protocols: {ospf: true, ospf6: true}
+    protocols: {ospf: true, ospf6: true, bgp: true}
   R2:
     image: "quay.io/frrouting/frr:master"
   R3:
     image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 64512
 links:
   - endpoints: [R1, R2]
   - endpoints: [R1, R3]

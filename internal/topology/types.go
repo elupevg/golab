@@ -21,6 +21,7 @@ type Node struct {
 	IPv6Loopbacks []string `yaml:"ipv6_loopbacks"`
 	Protocols     map[string]bool
 	Sysctls       map[string]string
+	ASN           *uint32
 }
 
 type Interface struct {
