@@ -1,0 +1,75 @@
+name: bgpbook
+config_mode: auto
+nodes:
+  R1:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true, ospf: true}
+    asn: 65082
+  R2:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true, ospf: true}
+    asn: 65082
+  R3:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true, ospf: true}
+    asn: 65082
+  R4:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true, ospf: true}
+    asn: 65082
+  R10:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65010
+  R20:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65020
+  R30:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65030
+  R40:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65040
+  R83:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65083
+  R84:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65084
+  R85:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 4206508500
+  R90:
+    image: "quay.io/frrouting/frr:master"
+    protocols: {bgp: true}
+    asn: 65090
+links:
+  - endpoints: [R1, R2]
+  - endpoints: [R1, R3]
+  - endpoints: [R2, R4]
+  - endpoints: [R3, R4]
+  # ISP 10
+  - endpoints: [R10, R20]
+  - endpoints: [R10, R40]
+  # ISP 20
+  - endpoints: [R20, R30]
+  # ISP 30
+  - endpoints: [R30, R1]
+  - endpoints: [R30, R2]
+  - endpoints: [R30, R83]
+  - endpoints: [R30, R84]
+  - endpoints: [R30, R85]
+  # ISP 40
+  - endpoints: [R40, R1]
+  - endpoints: [R40, R2]
+  - endpoints: [R40, R83]
+  - endpoints: [R40, R84]
+  - endpoints: [R40, R85]
+  # IXP 90
+  - endpoints: [R1, R83, R84, R85, R90]
