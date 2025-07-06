@@ -49,8 +49,8 @@ func (n *Node) validate(name string) error {
 	if n == nil {
 		return fmt.Errorf("node %q does not have an image specified", name)
 	}
-	if !isCompliant(name) {
-		return fmt.Errorf("node name %q does not comply with /R[0-9]*/ format", name)
+	if !isValidNodeName(name) {
+		return fmt.Errorf("node name %q is not in the [R1-R253] range", name)
 	}
 	if n.Image == "" {
 		return fmt.Errorf("node %q does not have an image specified", name)
@@ -81,7 +81,11 @@ func (n *Node) validate(name string) error {
 	return nil
 }
 
-func isCompliant(name string) bool {
+// isValidNodeName checks if the provided node name is compliant with the schema.
+// Legal node names lie in the range R1..R253. This naming convention is enforced
+// because node number is used in automated IP allocation. Number 254 is reserved
+// for a gateway in each network, which is a requirement in Docker.
+func isValidNodeName(name string) bool {
 	after, found := strings.CutPrefix(name, "R")
 	if !found {
 		return false
@@ -90,7 +94,7 @@ func isCompliant(name string) bool {
 	if err != nil {
 		return false
 	}
-	return num > 0 && num < 256
+	return num > 0 && num < 254
 }
 
 // isValidCIDR tells if the provided string is a valid IP address in CIDR notation.
@@ -119,6 +123,7 @@ func validateBind(bind string) error {
 	return nil
 }
 
+// validate runs sanity checks on the Link fields.
 func (l *Link) validate(nodes []string) error {
 	if len(l.Endpoints) < 2 {
 		return fmt.Errorf("link has fewer than two endpoints %v", l.Endpoints)
