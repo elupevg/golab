@@ -12,6 +12,7 @@ func TestFromYAML(t *testing.T) {
 	t.Parallel()
 	testYAML := `
 name: triangle
+ip_mode: dual
 config_mode: manual
 nodes:
   R1:
@@ -35,6 +36,7 @@ links:
 	var testASN uint32 = 65000
 	want := &Topology{
 		Name:       "triangle",
+		IPMode:     Dual,
 		ConfigMode: "manual",
 		Nodes: map[string]*Node{
 			"R1": {

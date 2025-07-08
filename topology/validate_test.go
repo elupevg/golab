@@ -164,3 +164,110 @@ func TestLinkValidateErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestNodeValidateErrors(t *testing.T) {
+	t.Parallel()
+	var badASN uint32 = 0
+	testCases := []struct {
+		name     string
+		node     *Node
+		nodeName string
+		ipMode   IPMode
+		errMsg   string
+	}{
+		{
+			name:     "NilNode",
+			node:     nil,
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `node "R1" does not have an image specified`,
+		},
+		{
+			name:     "BadName",
+			node:     &Node{},
+			nodeName: "Router01",
+			ipMode:   Dual,
+			errMsg:   `node name "Router01" is not in the [R1-R253] range`,
+		},
+		{
+			name:     "MissingImage",
+			node:     &Node{},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `node "R1" does not have an image specified`,
+		},
+		{
+			name: "BindWithoutColon",
+			node: &Node{
+				Image: "ceos-4.1.1",
+				Binds: []string{"/var/lib/modules/var/lib/modules"},
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `bind mount "/var/lib/modules/var/lib/modules" has invalid format`,
+		},
+		{
+			name: "BindPathNotAbsolute",
+			node: &Node{
+				Image: "ceos-4.1.1",
+				Binds: []string{"/var/lib/modules:var/lib/modules"},
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `bind mount "/var/lib/modules:var/lib/modules" has non-absolute destination path`,
+		},
+		{
+			name: "BadIPv4Loopback",
+			node: &Node{
+				Image:         "ceos-4.1.1",
+				IPv4Loopbacks: []string{"256.0.0.1/32"},
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `"256.0.0.1/32" is not a valid IPv4 address`,
+		},
+		{
+			name: "BadIPv6Loopback",
+			node: &Node{
+				Image:         "ceos-4.1.1",
+				IPv4Loopbacks: []string{"255.0.0.1/32"},
+				IPv6Loopbacks: []string{"2001:gb8::1/128"},
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `"2001:gb8::1/128" is not a valid IPv6 address`,
+		},
+		{
+			name: "BadIPv6Loopback",
+			node: &Node{
+				Image:     "ceos-4.1.1",
+				Protocols: map[string]bool{"rsvp": true},
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `node "R1" has unsupported protocol "rsvp"`,
+		},
+		{
+			name: "BadIPv6Loopback",
+			node: &Node{
+				Image: "ceos-4.1.1",
+				ASN:   &badASN,
+			},
+			nodeName: "R1",
+			ipMode:   Dual,
+			errMsg:   `node "R1" has unvalid ASN 0`,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.node.validate(tc.nodeName, tc.ipMode)
+			var errMsg string
+			if err != nil {
+				errMsg = err.Error()
+			}
+			if tc.errMsg != errMsg {
+				t.Errorf("error: want %q, got %q", tc.errMsg, errMsg)
+			}
+		})
+	}
+}

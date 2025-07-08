@@ -22,6 +22,9 @@ func (t *Topology) validate() error {
 	if t.Name == "" {
 		return errors.New("topology does not have a name")
 	}
+	if !t.IPMode.isValid() {
+		return fmt.Errorf("invalid ip_mode %q, supported: ipv4/ipv6/dual", t.IPMode)
+	}
 	if !t.ConfigMode.isValid() {
 		return fmt.Errorf("topology %q has invalid config mode %q", t.Name, t.ConfigMode)
 	}
@@ -32,7 +35,7 @@ func (t *Topology) validate() error {
 	for name, node := range t.Nodes {
 		if node == nil {
 		}
-		if err := node.validate(name); err != nil {
+		if err := node.validate(name, t.IPMode); err != nil {
 			return err
 		}
 		nodeNames = append(nodeNames, name)
@@ -45,7 +48,7 @@ func (t *Topology) validate() error {
 	return nil
 }
 
-func (n *Node) validate(name string) error {
+func (n *Node) validate(name string, ipm IPMode) error {
 	if n == nil {
 		return fmt.Errorf("node %q does not have an image specified", name)
 	}
@@ -115,10 +118,10 @@ func isValidCIDR(s string, ipVersion int) bool {
 func validateBind(bind string) error {
 	parts := strings.Split(bind, ":")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid bind mount %q has invalid format", bind)
+		return fmt.Errorf("bind mount %q has invalid format", bind)
 	}
 	if !filepath.IsAbs(parts[1]) {
-		return fmt.Errorf("invalid bind mount %q has non-absolute destination path", bind)
+		return fmt.Errorf("bind mount %q has non-absolute destination path", bind)
 	}
 	return nil
 }
@@ -145,6 +148,15 @@ func (l *Link) validate(nodes []string) error {
 func (cm ConfigMode) isValid() bool {
 	switch cm {
 	case None, Manual, Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+func (im IPMode) isValid() bool {
+	switch im {
+	case Unknown, IPv4, IPv6, Dual:
 		return true
 	default:
 		return false

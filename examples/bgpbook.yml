@@ -1,4 +1,5 @@
 name: bgpbook
+ip_mode: dual
 config_mode: auto
 nodes:
   R1:

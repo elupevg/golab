@@ -4,6 +4,15 @@ import (
 	"github.com/elupevg/golab/vendors"
 )
 
+type IPMode string
+
+const (
+	Unknown IPMode = ""
+	IPv4    IPMode = "ipv4"
+	IPv6    IPMode = "ipv6"
+	Dual    IPMode = "dual"
+)
+
 type ConfigMode string
 
 const (
@@ -17,6 +26,7 @@ type Topology struct {
 	Nodes      map[string]*Node `yaml:"nodes"`
 	Links      []*Link          `yaml:"links"`
 	ConfigMode ConfigMode       `yaml:"config_mode"`
+	IPMode     IPMode           `yaml:"ip_mode"`
 }
 
 type Node struct {
