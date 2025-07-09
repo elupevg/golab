@@ -238,7 +238,7 @@ func TestNodeValidateErrors(t *testing.T) {
 			errMsg:   `"2001:gb8::1/128" is not a valid IPv6 address`,
 		},
 		{
-			name: "BadIPv6Loopback",
+			name: "UnsupportedProtocol",
 			node: &Node{
 				Image:     "ceos-4.1.1",
 				Protocols: map[string]bool{"rsvp": true},
@@ -248,7 +248,7 @@ func TestNodeValidateErrors(t *testing.T) {
 			errMsg:   `node "R1" has unsupported protocol "rsvp"`,
 		},
 		{
-			name: "BadIPv6Loopback",
+			name: "InvalidASN",
 			node: &Node{
 				Image: "ceos-4.1.1",
 				ASN:   &badASN,
@@ -256,6 +256,28 @@ func TestNodeValidateErrors(t *testing.T) {
 			nodeName: "R1",
 			ipMode:   Dual,
 			errMsg:   `node "R1" has unvalid ASN 0`,
+		},
+		{
+			name: "MismatchIPMode",
+			node: &Node{
+				Image:         "ceos-4.1.1",
+				IPv4Loopbacks: []string{"192.168.0.1/32"},
+				IPv6Loopbacks: []string{"2001:db8::1/128"},
+			},
+			nodeName: "R1",
+			ipMode:   IPv4,
+			errMsg:   `ip_mode "ipv4" is incompatible with loopbacks [2001:db8::1/128]`,
+		},
+		{
+			name: "MismatchIPMode",
+			node: &Node{
+				Image:         "ceos-4.1.1",
+				IPv4Loopbacks: []string{"192.168.0.1/32"},
+				IPv6Loopbacks: []string{"2001:db8::1/128"},
+			},
+			nodeName: "R1",
+			ipMode:   IPv6,
+			errMsg:   `ip_mode "ipv6" is incompatible with loopbacks [192.168.0.1/32]`,
 		},
 	}
 	for _, tc := range testCases {

@@ -48,7 +48,8 @@ func (t *Topology) validate() error {
 	return nil
 }
 
-func (n *Node) validate(name string, ipm IPMode) error {
+// validate runs sanity checks on the user-provided Node struct fields.
+func (n *Node) validate(name string, ipMode IPMode) error {
 	if n == nil {
 		return fmt.Errorf("node %q does not have an image specified", name)
 	}
@@ -62,6 +63,12 @@ func (n *Node) validate(name string, ipm IPMode) error {
 		if err := validateBind(bind); err != nil {
 			return err
 		}
+	}
+	if ipMode == IPv4 && len(n.IPv6Loopbacks) != 0 {
+		return fmt.Errorf("ip_mode %q is incompatible with loopbacks %v", ipMode, n.IPv6Loopbacks)
+	}
+	if ipMode == IPv6 && len(n.IPv4Loopbacks) != 0 {
+		return fmt.Errorf("ip_mode %q is incompatible with loopbacks %v", ipMode, n.IPv4Loopbacks)
 	}
 	for _, loop := range n.IPv4Loopbacks {
 		if !isValidCIDR(loop, 4) {
