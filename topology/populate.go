@@ -12,13 +12,16 @@ import (
 const mplsLabels = 100_000
 
 func (t *Topology) populate() error {
+	if t.IPMode == Unknown {
+		t.IPMode = Dual
+	}
 	for name, node := range t.Nodes {
-		if err := node.populate(name, t.ConfigMode); err != nil {
+		if err := node.populate(name, t.ConfigMode, t.IPMode); err != nil {
 			return err
 		}
 	}
 	for i, link := range t.Links {
-		if err := link.populate(i, t.Nodes); err != nil {
+		if err := link.populate(i, t.Nodes, t.IPMode); err != nil {
 			return err
 		}
 	}
@@ -36,13 +39,13 @@ func (n *Node) populateBinds(configMode ConfigMode, vendorConfig vendors.Config)
 }
 
 // populate autofills missing fields in a Node struct.
-func (n *Node) populate(name string, configMode ConfigMode) error {
+func (n *Node) populate(name string, configMode ConfigMode, ipMode IPMode) error {
 	n.Name = name
 	n.Vendor = vendors.DetectByImage(n.Image)
-	if len(n.IPv4Loopbacks) == 0 {
+	if len(n.IPv4Loopbacks) == 0 && ipMode != IPv6 {
 		n.IPv4Loopbacks = []string{calcLoopback(name, 4)}
 	}
-	if len(n.IPv6Loopbacks) == 0 {
+	if len(n.IPv6Loopbacks) == 0 && ipMode != IPv4 {
 		n.IPv6Loopbacks = []string{calcLoopback(name, 6)}
 	}
 	if n.Vendor == vendors.FRR && n.Protocols["ldp"] {
@@ -68,12 +71,12 @@ func calcLoopback(name string, ipVersion int) string {
 	return loopback
 }
 
-func (l *Link) populate(i int, nodes map[string]*Node) error {
+func (l *Link) populate(i int, nodes map[string]*Node, ipMode IPMode) error {
 	l.Name = fmt.Sprintf("golab-link-%d", i+1)
-	if l.IPv4Subnet == "" {
+	if l.IPv4Subnet == "" && ipMode != IPv6 {
 		l.IPv4Subnet = calcSubnet(l.Endpoints, 4)
 	}
-	if l.IPv6Subnet == "" {
+	if l.IPv6Subnet == "" && ipMode != IPv4 {
 		l.IPv6Subnet = calcSubnet(l.Endpoints, 6)
 	}
 	for _, ep := range l.Endpoints {
@@ -118,6 +121,9 @@ func calcSubnet(endpoints []string, ipVersion int) string {
 }
 
 func calcHost(subnet string, index int) string {
+	if subnet == "" {
+		return ""
+	}
 	net, pl, _ := strings.Cut(subnet, "/")
 	if strings.Contains(subnet, ".") {
 		net, _ = strings.CutSuffix(net, "0")

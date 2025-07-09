@@ -41,7 +41,7 @@ func (t *Topology) validate() error {
 		nodeNames = append(nodeNames, name)
 	}
 	for _, link := range t.Links {
-		if err := link.validate(nodeNames); err != nil {
+		if err := link.validate(nodeNames, t.IPMode); err != nil {
 			return err
 		}
 	}
@@ -134,7 +134,7 @@ func validateBind(bind string) error {
 }
 
 // validate runs sanity checks on the Link fields.
-func (l *Link) validate(nodes []string) error {
+func (l *Link) validate(nodes []string, ipMode IPMode) error {
 	if len(l.Endpoints) < 2 {
 		return fmt.Errorf("link has fewer than two endpoints %v", l.Endpoints)
 	}
@@ -142,6 +142,12 @@ func (l *Link) validate(nodes []string) error {
 		if !slices.Contains(nodes, ep) {
 			return fmt.Errorf("unknown node %q in endpoints %v", ep, l.Endpoints)
 		}
+	}
+	if l.IPv4Subnet != "" && ipMode == IPv6 {
+		return fmt.Errorf("ip_mode %q is incompatible with subnet %q", ipMode, l.IPv4Subnet)
+	}
+	if l.IPv6Subnet != "" && ipMode == IPv4 {
+		return fmt.Errorf("ip_mode %q is incompatible with subnet %q", ipMode, l.IPv6Subnet)
 	}
 	if l.IPv4Subnet != "" && !isValidCIDR(l.IPv4Subnet, 4) {
 		return fmt.Errorf("%q is not a valid IPv4 subnet", l.IPv4Subnet)

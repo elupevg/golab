@@ -12,7 +12,6 @@ func TestFromYAML(t *testing.T) {
 	t.Parallel()
 	testYAML := `
 name: triangle
-ip_mode: dual
 config_mode: manual
 nodes:
   R1:

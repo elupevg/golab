@@ -115,6 +115,7 @@ func TestLinkValidateErrors(t *testing.T) {
 	testCases := []struct {
 		name   string
 		link   *Link
+		ipMode IPMode
 		errMsg string
 	}{
 		{
@@ -150,10 +151,28 @@ func TestLinkValidateErrors(t *testing.T) {
 			},
 			errMsg: `"2001:db8:1:2::/129" is not a valid IPv6 subnet`,
 		},
+		{
+			name: "BadIPModeIPv6",
+			link: &Link{
+				Endpoints:  []string{"R1", "R2"},
+				IPv4Subnet: "10.1.2.0/24",
+			},
+			ipMode: IPv6,
+			errMsg: `ip_mode "ipv6" is incompatible with subnet "10.1.2.0/24"`,
+		},
+		{
+			name: "BadIPModeIPv4",
+			link: &Link{
+				Endpoints:  []string{"R1", "R2"},
+				IPv6Subnet: "2001:db8:1:2::/129",
+			},
+			ipMode: IPv4,
+			errMsg: `ip_mode "ipv4" is incompatible with subnet "2001:db8:1:2::/129"`,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.link.validate([]string{"R1", "R2", "R3"})
+			err := tc.link.validate([]string{"R1", "R2", "R3"}, tc.ipMode)
 			var errMsg string
 			if err != nil {
 				errMsg = err.Error()
@@ -179,21 +198,18 @@ func TestNodeValidateErrors(t *testing.T) {
 			name:     "NilNode",
 			node:     nil,
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `node "R1" does not have an image specified`,
 		},
 		{
 			name:     "BadName",
 			node:     &Node{},
 			nodeName: "Router01",
-			ipMode:   Dual,
 			errMsg:   `node name "Router01" is not in the [R1-R253] range`,
 		},
 		{
 			name:     "MissingImage",
 			node:     &Node{},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `node "R1" does not have an image specified`,
 		},
 		{
@@ -203,7 +219,6 @@ func TestNodeValidateErrors(t *testing.T) {
 				Binds: []string{"/var/lib/modules/var/lib/modules"},
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `bind mount "/var/lib/modules/var/lib/modules" has invalid format`,
 		},
 		{
@@ -213,7 +228,6 @@ func TestNodeValidateErrors(t *testing.T) {
 				Binds: []string{"/var/lib/modules:var/lib/modules"},
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `bind mount "/var/lib/modules:var/lib/modules" has non-absolute destination path`,
 		},
 		{
@@ -223,7 +237,6 @@ func TestNodeValidateErrors(t *testing.T) {
 				IPv4Loopbacks: []string{"256.0.0.1/32"},
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `"256.0.0.1/32" is not a valid IPv4 address`,
 		},
 		{
@@ -234,7 +247,6 @@ func TestNodeValidateErrors(t *testing.T) {
 				IPv6Loopbacks: []string{"2001:gb8::1/128"},
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `"2001:gb8::1/128" is not a valid IPv6 address`,
 		},
 		{
@@ -244,7 +256,6 @@ func TestNodeValidateErrors(t *testing.T) {
 				Protocols: map[string]bool{"rsvp": true},
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `node "R1" has unsupported protocol "rsvp"`,
 		},
 		{
@@ -254,14 +265,12 @@ func TestNodeValidateErrors(t *testing.T) {
 				ASN:   &badASN,
 			},
 			nodeName: "R1",
-			ipMode:   Dual,
 			errMsg:   `node "R1" has unvalid ASN 0`,
 		},
 		{
-			name: "MismatchIPMode",
+			name: "BadIPModeIPv4",
 			node: &Node{
 				Image:         "ceos-4.1.1",
-				IPv4Loopbacks: []string{"192.168.0.1/32"},
 				IPv6Loopbacks: []string{"2001:db8::1/128"},
 			},
 			nodeName: "R1",
@@ -269,11 +278,10 @@ func TestNodeValidateErrors(t *testing.T) {
 			errMsg:   `ip_mode "ipv4" is incompatible with loopbacks [2001:db8::1/128]`,
 		},
 		{
-			name: "MismatchIPMode",
+			name: "BadIPModeIPv6",
 			node: &Node{
 				Image:         "ceos-4.1.1",
 				IPv4Loopbacks: []string{"192.168.0.1/32"},
-				IPv6Loopbacks: []string{"2001:db8::1/128"},
 			},
 			nodeName: "R1",
 			ipMode:   IPv6,
