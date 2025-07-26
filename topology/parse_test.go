@@ -49,7 +49,7 @@ links:
 				Interfaces: []*Interface{
 					{
 						Name:     "eth0",
-						Link:     "golab-link-1",
+						Link:     "golab-link-01",
 						IPv4Addr: "10.1.2.1/24",
 						IPv6Addr: "2001:db8:1:2::1/64",
 						DriverOpts: map[string]string{
@@ -58,7 +58,7 @@ links:
 					},
 					{
 						Name:     "eth1",
-						Link:     "golab-link-2",
+						Link:     "golab-link-02",
 						IPv4Addr: "10.1.3.1/24",
 						IPv6Addr: "2001:db8:1:3::1/64",
 						DriverOpts: map[string]string{
@@ -82,12 +82,12 @@ links:
 				Interfaces: []*Interface{
 					{
 						Name:     "eth0",
-						Link:     "golab-link-1",
+						Link:     "golab-link-01",
 						IPv4Addr: "10.1.2.2/24", IPv6Addr: "2001:db8:1:2::2/64",
 					},
 					{
 						Name:     "eth1",
-						Link:     "golab-link-3",
+						Link:     "golab-link-03",
 						IPv4Addr: "100.64.0.2/24", IPv6Addr: "2001:db8:64::2/64",
 					},
 				},
@@ -107,12 +107,12 @@ links:
 				Interfaces: []*Interface{
 					{
 						Name:     "eth0",
-						Link:     "golab-link-2",
+						Link:     "golab-link-02",
 						IPv4Addr: "10.1.3.3/24", IPv6Addr: "2001:db8:1:3::3/64",
 					},
 					{
 						Name:     "eth1",
-						Link:     "golab-link-3",
+						Link:     "golab-link-03",
 						IPv4Addr: "100.64.0.3/24", IPv6Addr: "2001:db8:64::3/64",
 					},
 				},
@@ -128,7 +128,7 @@ links:
 		},
 		Links: []*Link{
 			{
-				Name:        "golab-link-1",
+				Name:        "golab-link-01",
 				Endpoints:   []string{"R1", "R2"},
 				IPv4Subnet:  "10.1.2.0/24",
 				IPv6Subnet:  "2001:db8:1:2::/64",
@@ -136,7 +136,7 @@ links:
 				IPv6Gateway: "2001:db8:1:2::254",
 			},
 			{
-				Name:        "golab-link-2",
+				Name:        "golab-link-02",
 				Endpoints:   []string{"R1", "R3"},
 				IPv4Subnet:  "10.1.3.0/24",
 				IPv6Subnet:  "2001:db8:1:3::/64",
@@ -144,7 +144,7 @@ links:
 				IPv6Gateway: "2001:db8:1:3::254",
 			},
 			{
-				Name:        "golab-link-3",
+				Name:        "golab-link-03",
 				Endpoints:   []string{"R2", "R3"},
 				IPv4Subnet:  "100.64.0.0/24",
 				IPv6Subnet:  "2001:db8:64::/64",

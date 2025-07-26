@@ -121,7 +121,7 @@ func TestLinkCreateRemove(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Name:        "golab-link-1",
+		Name:        "golab-link-01",
 		IPv4Subnet:  "100.11.0.0/24",
 		IPv6Subnet:  "2001:db8:11::/64",
 		IPv4Gateway: "100.11.0.254",
@@ -176,7 +176,7 @@ func TestLinkExistsError(t *testing.T) {
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	wantErr := errors.New("failed to list networks")
 	fdc.networkListErr = wantErr
-	_, err := dp.LinkExists(ctx, topology.Link{Name: "golab-link-1"})
+	_, err := dp.LinkExists(ctx, topology.Link{Name: "golab-link-01"})
 	if !errors.Is(err, wantErr) {
 		t.Errorf("error: want %q, got %q", wantErr, err)
 	}
@@ -188,7 +188,7 @@ func TestLinkCreateError(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Name:        "golab-link-1",
+		Name:        "golab-link-01",
 		IPv4Subnet:  "100.11.0.0/24",
 		IPv4Gateway: "100.11.0.254",
 	}
@@ -215,7 +215,7 @@ func TestLinkRemoveErrors(t *testing.T) {
 	fdc := newFakeDockerClient()
 	dp := docker.New(fdc, logger.New(io.Discard, io.Discard))
 	link := topology.Link{
-		Name:        "golab-link-1",
+		Name:        "golab-link-01",
 		IPv4Subnet:  "100.11.0.0/24",
 		IPv4Gateway: "100.11.0.254",
 	}
@@ -253,7 +253,7 @@ func TestNodeCreateRemove(t *testing.T) {
 		Interfaces: []*topology.Interface{
 			{
 				Name:     "eth0",
-				Link:     "golab-link-1",
+				Link:     "golab-link-01",
 				IPv4Addr: "100.64.0.1/29",
 				IPv6Addr: "2001:db8:64::1/64",
 			},

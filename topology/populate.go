@@ -72,7 +72,7 @@ func calcLoopback(name string, ipVersion int) string {
 }
 
 func (l *Link) populate(i int, nodes map[string]*Node, ipMode IPMode) error {
-	l.Name = fmt.Sprintf("golab-link-%d", i+1)
+	l.Name = fmt.Sprintf("golab-link-%0.2d", i+1)
 	if l.IPv4Subnet == "" && ipMode != IPv6 {
 		l.IPv4Subnet = calcSubnet(l.Endpoints, 4)
 	}
